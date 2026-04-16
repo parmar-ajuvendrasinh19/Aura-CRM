@@ -1,0 +1,266 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  MEMBER
+}
+
+enum DealStage {
+  LEAD
+  CONTACTED
+  PROPOSAL_SENT
+  WON
+  LOST
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum ServiceType {
+  SEO
+  WEBSITE_DEVELOPMENT
+  SOCIAL_MEDIA
+  ADS
+  CONTENT_MARKETING
+  EMAIL_MARKETING
+  OTHER
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+enum ActivityType {
+  CALL
+  MEETING
+  NOTE
+  EMAIL
+  TASK_UPDATE
+  STATUS_CHANGE
+}
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  phone       String?
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  clients     Client[]
+  projects    Project[]
+  deals       Deal[]
+  activities  Activity[]
+  payments    Payment[]
+
+  @@index([email])
+}
+
+model User {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  password       String
+  name           String
+  role           UserRole       @default(MEMBER)
+  avatar         String?
+  isActive       Boolean        @default(true)
+  organizationId String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  refreshTokens  RefreshToken[]
+  assignedTasks  Task[]         @relation("TaskAssignee")
+  createdTasks   Task[]         @relation("TaskCreator")
+  activities     Activity[]
+
+  @@index([email])
+  @@index([organizationId])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+model Client {
+  id             String        @id @default(cuid())
+  name           String
+  company        String?
+  email          String?
+  phone          String?
+  address        String?
+  notes          String?
+  organizationId String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projects       Project[]
+  deals          Deal[]
+  activities     Activity[]
+  payments       Payment[]
+
+  @@index([organizationId])
+}
+
+model Project {
+  id             String        @id @default(cuid())
+  name           String
+  description    String?
+  serviceType    ServiceType
+  status         ProjectStatus @default(ACTIVE)
+  startDate      DateTime?
+  deadline       DateTime?
+  budget         Float?
+  value          Float?
+  isRecurring    Boolean       @default(false)
+  recurringMonth  Int?          // Day of month for recurring tasks (1-31)
+  organizationId String
+  clientId       String?
+  dealId         String?       @unique
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client         Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  deal           Deal?         @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  tasks          Task[]
+  activities     Activity[]
+  payments       Payment[]
+
+  @@index([organizationId])
+  @@index([clientId])
+  @@index([dealId])
+}
+
+model Task {
+  id             String        @id @default(cuid())
+  title          String
+  description    String?
+  status         TaskStatus    @default(TODO)
+  dueDate        DateTime?
+  projectId      String
+  assigneeId     String?
+  creatorId      String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee       User?         @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  creator        User          @relation("TaskCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  activities     Activity[]
+
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([creatorId])
+}
+
+model Deal {
+  id             String        @id @default(cuid())
+  title          String
+  description    String?
+  stage          DealStage    @default(LEAD)
+  value          Float?
+  probability    Int?         // 0-100
+  expectedCloseDate DateTime?
+  organizationId String
+  clientId       String?
+  projectId      String?      @unique
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client         Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  project        Project?      @relation
+  activities     Activity[]
+
+  @@index([organizationId])
+  @@index([clientId])
+  @@index([stage])
+}
+
+model Activity {
+  id             String        @id @default(cuid())
+  type           ActivityType
+  title          String
+  description    String?
+  date           DateTime      @default(now())
+  organizationId String
+  userId         String?
+  clientId       String?
+  projectId      String?
+  taskId         String?
+  dealId         String?
+  createdAt      DateTime      @default(now())
+
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  client         Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  project        Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  task           Task?         @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  deal           Deal?         @relation(fields: [dealId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([clientId])
+  @@index([projectId])
+  @@index([taskId])
+  @@index([dealId])
+  @@index([date])
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  amount         Float
+  status         PaymentStatus @default(PENDING)
+  dueDate        DateTime?
+  paidDate       DateTime?
+  description    String?
+  invoiceNumber  String?
+  organizationId String
+  clientId       String?
+  projectId      String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client         Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  project        Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([clientId])
+  @@index([projectId])
+  @@index([status])
+}
