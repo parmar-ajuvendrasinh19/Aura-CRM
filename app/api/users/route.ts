@@ -41,8 +41,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('POST /api/users - Starting request')
+  
   try {
     const user = await getCurrentUser()
+    console.log('POST /api/users - Current user:', user?.email, 'Role:', user?.role)
     
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -54,7 +57,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    console.log('POST /api/users - Request body:', body)
     const validatedData = userSchema.parse(body)
+    console.log('POST /api/users - Validated data:', validatedData)
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -93,9 +98,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    console.log('POST /api/users - User created successfully:', newUser.id, newUser.email)
     return NextResponse.json(newUser, { status: 201 })
   } catch (error: any) {
-    console.error('Create user error:', error)
+    console.error('POST /api/users - Error:', error)
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }

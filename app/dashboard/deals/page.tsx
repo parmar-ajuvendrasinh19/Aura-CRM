@@ -13,6 +13,11 @@ interface Deal {
   client: { id: string; name: string } | null
 }
 
+interface Client {
+  id: string
+  name: string
+}
+
 const stages = ['LEAD', 'CONTACTED', 'PROPOSAL_SENT', 'WON', 'LOST']
 
 const stageColors = {
@@ -27,20 +32,61 @@ export default function DealsPage() {
   const [deals, setDeals] = useState<Deal[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+  const [clients, setClients] = useState<Client[]>([])
+  const [formError, setFormError] = useState('')
+  
+  // Form state with controlled components
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    stage: 'LEAD',
+    value: '',
+    probability: '',
+    clientId: '',
+  })
 
   useEffect(() => {
     fetchDeals()
   }, [])
 
-  async function fetchDeals() {
+  useEffect(() => {
+    if (showModal) {
+      fetchClients()
+    }
+  }, [showModal])
+
+  async function fetchClients() {
     try {
-      const response = await fetch('/api/deals')
+      const response = await fetch('/api/clients')
       if (response.ok) {
         const data = await response.json()
+        setClients(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch clients:', error)
+    }
+  }
+
+  async function fetchDeals() {
+    console.log('Fetching deals...')
+    try {
+      const response = await fetch('/api/deals')
+      console.log('Deals API response status:', response.status)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Deals fetched successfully:', data.length, 'deals')
         setDeals(data)
+      } else {
+        const errorData = await response.json()
+        console.error('Failed to fetch deals:', errorData)
+        setErrorMessage(errorData.error || 'Failed to fetch deals')
       }
     } catch (error) {
       console.error('Failed to fetch deals:', error)
+      setErrorMessage('Network error. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -73,9 +119,22 @@ export default function DealsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Deals Pipeline</h1>
           <p className="mt-2 text-gray-600">Track your leads and opportunities</p>
         </div>
+        {successMessage && (
+          <div className="rounded-lg bg-green-50 px-4 py-2 text-sm font-medium text-green-800">
+            {successMessage}
+          </div>
+        )}
+        {errorMessage && (
+          <div className="rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-800">
+            {errorMessage}
+          </div>
+        )}
         <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+          onClick={() => {
+            console.log('Add Deal button clicked')
+            setShowModal(true)
+          }}
+          className="flex cursor-pointer items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
         >
           <Plus className="mr-2 h-4 w-4" />
           Add Deal
@@ -138,21 +197,45 @@ export default function DealsPage() {
 
       {/* Add Deal Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-md rounded-lg bg-white p-6">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          onClick={() => {
+            console.log('Modal backdrop clicked')
+            setShowModal(false)
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-lg bg-white p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 className="mb-4 text-xl font-bold text-gray-900">Add New Deal</h2>
             <form
               onSubmit={async (e) => {
                 e.preventDefault()
-                const formData = new FormData(e.currentTarget)
-                const data = {
-                  title: formData.get('title') as string,
-                  description: formData.get('description') as string,
-                  stage: formData.get('stage') as string,
-                  value: formData.get('value') ? parseFloat(formData.get('value') as string) : null,
-                  probability: formData.get('probability') ? parseInt(formData.get('probability') as string) : null,
-                  clientId: formData.get('clientId') as string,
+                setErrorMessage('')
+                setSuccessMessage('')
+                setFormError('')
+                
+                // Frontend validation
+                if (!formData.title.trim()) {
+                  setFormError('Deal title is required')
+                  return
                 }
+                if (!formData.clientId) {
+                  setFormError('Client is required')
+                  return
+                }
+                
+                const data = {
+                  title: formData.title,
+                  description: formData.description || null,
+                  stage: formData.stage,
+                  value: formData.value ? parseFloat(formData.value) : null,
+                  probability: formData.probability ? parseInt(formData.probability) : null,
+                  clientId: formData.clientId,
+                }
+
+                console.log('Submitting deal:', data)
 
                 try {
                   const response = await fetch('/api/deals', {
@@ -160,38 +243,79 @@ export default function DealsPage() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data),
                   })
+                  
+                  console.log('Deal API response status:', response.status)
+                  
+                  const responseData = await response.json()
+                  console.log('Deal API response data:', responseData)
+                  
                   if (response.ok) {
+                    setSuccessMessage('Deal created successfully!')
                     setShowModal(false)
+                    // Reset form
+                    setFormData({
+                      title: '',
+                      description: '',
+                      stage: 'LEAD',
+                      value: '',
+                      probability: '',
+                      clientId: '',
+                    })
                     fetchDeals()
+                    setTimeout(() => setSuccessMessage(''), 3000)
+                  } else {
+                    setErrorMessage(responseData.error || 'Failed to create deal')
                   }
                 } catch (error) {
                   console.error('Failed to create deal:', error)
+                  setErrorMessage('Network error. Please try again.')
                 }
               }}
               className="space-y-4"
             >
+              {formError && (
+                <div className="rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-800">
+                  {formError}
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700">Deal Title *</label>
                 <input
-                  name="title"
                   type="text"
-                  required
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Description</label>
                 <textarea
-                  name="description"
                   rows={3}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
                 />
               </div>
               <div>
+                <label className="block text-sm font-medium text-gray-700">Client *</label>
+                <select
+                  value={formData.clientId}
+                  onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+                >
+                  <option value="">Select client</option>
+                  {clients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700">Stage *</label>
                 <select
-                  name="stage"
-                  required
+                  value={formData.stage}
+                  onChange={(e) => setFormData({ ...formData, stage: e.target.value })}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
                 >
                   <option value="LEAD">Lead</option>
@@ -204,33 +328,39 @@ export default function DealsPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700">Value (₹)</label>
                 <input
-                  name="value"
                   type="number"
                   step="0.01"
+                  value={formData.value}
+                  onChange={(e) => setFormData({ ...formData, value: e.target.value })}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Probability (%)</label>
                 <input
-                  name="probability"
                   type="number"
                   min="0"
                   max="100"
+                  value={formData.probability}
+                  onChange={(e) => setFormData({ ...formData, probability: e.target.value })}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
                 />
               </div>
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
-                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                  onClick={() => {
+                    console.log('Cancel button clicked')
+                    setShowModal(false)
+                  }}
+                  className="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                  disabled={!formData.title || !formData.clientId}
+                  className="cursor-pointer rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   Add Deal
                 </button>

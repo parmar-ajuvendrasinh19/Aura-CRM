@@ -47,16 +47,16 @@ export const projectSchema = z.object({
   value: z.number().optional(),
   isRecurring: z.boolean().default(false),
   recurringMonth: z.number().min(1).max(31).optional(),
-  clientId: z.string().optional(),
+  clientId: z.string().min(1, 'Client is required'),
 })
 
 export const taskSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters'),
   description: z.string().optional(),
-  status: z.enum(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE']).default('TODO'),
+  status: z.enum(['TODO', 'IN_PROGRESS', 'REVIEW', 'COMPLETED']).default('TODO'),
   dueDate: z.string().optional(),
-  projectId: z.string(),
-  assigneeId: z.string().optional(),
+  projectId: z.string().min(1, 'Project is required'),
+  assigneeId: z.string().min(1, 'Assignee is required'),
 })
 
 export const dealSchema = z.object({
@@ -66,7 +66,7 @@ export const dealSchema = z.object({
   value: z.number().optional(),
   probability: z.number().min(0).max(100).optional(),
   expectedCloseDate: z.string().optional(),
-  clientId: z.string().optional(),
+  clientId: z.string().min(1, 'Client is required'),
 })
 
 export const activitySchema = z.object({
@@ -82,11 +82,11 @@ export const activitySchema = z.object({
 
 export const paymentSchema = z.object({
   amount: z.number().min(0, 'Amount must be positive'),
-  status: z.enum(['PAID', 'PARTIAL', 'UNPAID', 'OVERDUE']).default('UNPAID'),
+  status: z.enum(['PENDING', 'PAID', 'OVERDUE']).default('PENDING'),
   dueDate: z.string().optional(),
   paidDate: z.string().optional(),
   description: z.string().optional(),
   invoiceNumber: z.string().optional(),
   clientId: z.string().optional(),
-  projectId: z.string().optional(),
+  projectId: z.string().min(1, 'Project is required'),
 })

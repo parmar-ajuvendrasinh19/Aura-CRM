@@ -1,22 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getCurrentUser } from '@/lib/auth'
+import { getOrganization } from '@/lib/getOrganization'
 import { projectSchema } from '@/lib/validations'
 
 export async function GET(request: NextRequest) {
+  console.log('GET /api/projects - Starting request')
+  
   try {
-    const user = await getCurrentUser()
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const organizationId = await getOrganization()
+    console.log('GET /api/projects - Organization ID:', organizationId)
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     const serviceType = searchParams.get('serviceType')
     const clientId = searchParams.get('clientId')
 
-    const where: any = { organizationId: user.organizationId }
+    const where: any = { organizationId }
     
     if (status) where.status = status
     if (serviceType) where.serviceType = serviceType
@@ -39,9 +38,18 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
 
+    console.log('GET /api/projects - Successfully retrieved', projects.length, 'projects')
     return NextResponse.json(projects)
   } catch (error: any) {
-    console.error('Get projects error:', error)
+    console.error('GET /api/projects - Error:', error)
+    
+    if (error.message.includes('No organization found')) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      )
+    }
+    
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
@@ -50,31 +58,42 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('POST /api/projects - Starting request')
+  
   try {
-    const user = await getCurrentUser()
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const organizationId = await getOrganization()
+    console.log('POST /api/projects - Organization ID:', organizationId)
 
     const body = await request.json()
+    console.log('POST /api/projects - Request body:', body)
+    
     const validatedData = projectSchema.parse(body)
+    console.log('POST /api/projects - Validated data:', validatedData)
 
     const project = await prisma.project.create({
       data: {
         ...validatedData,
         startDate: validatedData.startDate ? new Date(validatedData.startDate) : null,
         deadline: validatedData.deadline ? new Date(validatedData.deadline) : null,
-        organizationId: user.organizationId,
+        organizationId,
       },
       include: {
         client: true,
       },
     })
 
+    console.log('POST /api/projects - Project created successfully:', project.id)
     return NextResponse.json(project, { status: 201 })
   } catch (error: any) {
-    console.error('Create project error:', error)
+    console.error('POST /api/projects - Error:', error)
+    
+    if (error.message.includes('No organization found')) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      )
+    }
+    
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }

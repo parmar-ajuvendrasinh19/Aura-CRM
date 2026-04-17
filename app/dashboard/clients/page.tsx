@@ -21,20 +21,31 @@ export default function ClientsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
     fetchClients()
   }, [])
 
   async function fetchClients() {
+    console.log('Fetching clients...')
     try {
       const response = await fetch('/api/clients')
+      console.log('Clients API response status:', response.status)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log('Clients fetched successfully:', data.length, 'clients')
         setClients(data)
+      } else {
+        const errorData = await response.json()
+        console.error('Failed to fetch clients:', errorData)
+        setErrorMessage(errorData.error || 'Failed to fetch clients')
       }
     } catch (error) {
       console.error('Failed to fetch clients:', error)
+      setErrorMessage('Network error. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -53,9 +64,22 @@ export default function ClientsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
           <p className="mt-2 text-gray-600">Manage your client relationships</p>
         </div>
+        {successMessage && (
+          <div className="rounded-lg bg-green-50 px-4 py-2 text-sm font-medium text-green-800">
+            {successMessage}
+          </div>
+        )}
+        {errorMessage && (
+          <div className="rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-800">
+            {errorMessage}
+          </div>
+        )}
         <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+          onClick={() => {
+            console.log('Add Client button clicked')
+            setShowModal(true)
+          }}
+          className="flex cursor-pointer items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
         >
           <Plus className="mr-2 h-4 w-4" />
           Add Client
@@ -137,12 +161,24 @@ export default function ClientsPage() {
 
       {/* Add Client Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-md rounded-lg bg-white p-6">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          onClick={() => {
+            console.log('Modal backdrop clicked')
+            setShowModal(false)
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-lg bg-white p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 className="mb-4 text-xl font-bold text-gray-900">Add New Client</h2>
             <form
               onSubmit={async (e) => {
                 e.preventDefault()
+                setErrorMessage('')
+                setSuccessMessage('')
+                
                 const formData = new FormData(e.currentTarget)
                 const data = {
                   name: formData.get('name') as string,
@@ -152,18 +188,31 @@ export default function ClientsPage() {
                   notes: formData.get('notes') as string,
                 }
 
+                console.log('Submitting client:', data)
+
                 try {
                   const response = await fetch('/api/clients', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data),
                   })
+                  
+                  console.log('API response status:', response.status)
+                  
+                  const responseData = await response.json()
+                  console.log('API response data:', responseData)
+                  
                   if (response.ok) {
+                    setSuccessMessage('Client created successfully!')
                     setShowModal(false)
                     fetchClients()
+                    setTimeout(() => setSuccessMessage(''), 3000)
+                  } else {
+                    setErrorMessage(responseData.error || 'Failed to create client')
                   }
                 } catch (error) {
                   console.error('Failed to create client:', error)
+                  setErrorMessage('Network error. Please try again.')
                 }
               }}
               className="space-y-4"
@@ -212,14 +261,17 @@ export default function ClientsPage() {
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
-                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                  onClick={() => {
+                    console.log('Cancel button clicked')
+                    setShowModal(false)
+                  }}
+                  className="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                  className="cursor-pointer rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
                 >
                   Add Client
                 </button>

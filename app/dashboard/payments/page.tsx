@@ -14,26 +14,70 @@ interface Payment {
   client: { id: string; name: string } | null
 }
 
+interface Project {
+  id: string
+  name: string
+}
+
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+  const [projects, setProjects] = useState<Project[]>([])
+  const [formError, setFormError] = useState('')
+  
+  // Form state with controlled components
+  const [formData, setFormData] = useState({
+    amount: '',
+    status: 'PENDING',
+    dueDate: '',
+    projectId: '',
+  })
 
   useEffect(() => {
     fetchPayments()
   }, [])
 
-  async function fetchPayments() {
+  useEffect(() => {
+    if (showModal) {
+      fetchProjects()
+    }
+  }, [showModal])
+
+  async function fetchProjects() {
     try {
-      const response = await fetch('/api/payments')
+      const response = await fetch('/api/projects')
       if (response.ok) {
         const data = await response.json()
+        setProjects(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch projects:', error)
+    }
+  }
+
+  async function fetchPayments() {
+    console.log('Fetching payments...')
+    try {
+      const response = await fetch('/api/payments')
+      console.log('Payments API response status:', response.status)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Payments fetched successfully:', data.length, 'payments')
         setPayments(data)
+      } else {
+        const errorData = await response.json()
+        console.error('Failed to fetch payments:', errorData)
+        setErrorMessage(errorData.error || 'Failed to fetch payments')
       }
     } catch (error) {
       console.error('Failed to fetch payments:', error)
+      setErrorMessage('Network error. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -54,14 +98,28 @@ export default function PaymentsPage() {
 
   return (
     <div className="p-8">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="rounded-lg bg-white p-6 shadow-sm">
+        <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Payments</h1>
           <p className="mt-2 text-gray-600">Track project payments and revenue</p>
         </div>
+        {successMessage && (
+          <div className="rounded-lg bg-green-50 px-4 py-2 text-sm font-medium text-green-800">
+            {successMessage}
+          </div>
+        )}
+        {errorMessage && (
+          <div className="rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-800">
+            {errorMessage}
+          </div>
+        )}
         <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+          onClick={() => {
+            console.log('Add Payment button clicked')
+            setShowModal(true)
+          }}
+          className="flex cursor-pointer items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
         >
           <Plus className="mr-2 h-4 w-4" />
           Add Payment
@@ -152,19 +210,47 @@ export default function PaymentsPage() {
 
       {/* Add Payment Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-md rounded-lg bg-white p-6">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          onClick={() => {
+            console.log('Modal backdrop clicked')
+            setShowModal(false)
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-lg bg-white p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 className="mb-4 text-xl font-bold text-gray-900">Add New Payment</h2>
             <form
               onSubmit={async (e) => {
                 e.preventDefault()
-                const formData = new FormData(e.currentTarget)
-                const data = {
-                  amount: parseFloat(formData.get('amount') as string),
-                  status: formData.get('status') as string,
-                  dueDate: formData.get('dueDate') as string,
-                  projectId: formData.get('projectId') as string,
+                setErrorMessage('')
+                setSuccessMessage('')
+                setFormError('')
+                
+                // Frontend validation
+                if (!formData.amount) {
+                  setFormError('Amount is required')
+                  return
                 }
+                if (parseFloat(formData.amount) <= 0) {
+                  setFormError('Amount must be positive')
+                  return
+                }
+                if (!formData.projectId) {
+                  setFormError('Project is required')
+                  return
+                }
+                
+                const data = {
+                  amount: parseFloat(formData.amount),
+                  status: formData.status,
+                  dueDate: formData.dueDate || null,
+                  projectId: formData.projectId,
+                }
+
+                console.log('Submitting payment:', data)
 
                 try {
                   const response = await fetch('/api/payments', {
@@ -172,31 +258,70 @@ export default function PaymentsPage() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data),
                   })
+                  
+                  console.log('Payment API response status:', response.status)
+                  
+                  const responseData = await response.json()
+                  console.log('Payment API response data:', responseData)
+                  
                   if (response.ok) {
+                    setSuccessMessage('Payment created successfully!')
                     setShowModal(false)
+                    // Reset form
+                    setFormData({
+                      amount: '',
+                      status: 'PENDING',
+                      dueDate: '',
+                      projectId: '',
+                    })
                     fetchPayments()
+                    setTimeout(() => setSuccessMessage(''), 3000)
+                  } else {
+                    setErrorMessage(responseData.error || 'Failed to create payment')
                   }
                 } catch (error) {
                   console.error('Failed to create payment:', error)
+                  setErrorMessage('Network error. Please try again.')
                 }
               }}
               className="space-y-4"
             >
+              {formError && (
+                <div className="rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-800">
+                  {formError}
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700">Amount (₹) *</label>
                 <input
-                  name="amount"
                   type="number"
                   step="0.01"
-                  required
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Project *</label>
+                <select
+                  value={formData.projectId}
+                  onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+                >
+                  <option value="">Select project</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Status</label>
                 <select
-                  name="status"
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
                 >
                   <option value="PENDING">Pending</option>
                   <option value="PAID">Paid</option>
@@ -206,22 +331,27 @@ export default function PaymentsPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700">Due Date</label>
                 <input
-                  name="dueDate"
                   type="date"
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+                  value={formData.dueDate}
+                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
                 />
               </div>
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
-                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                  onClick={() => {
+                    console.log('Cancel button clicked')
+                    setShowModal(false)
+                  }}
+                  className="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                  disabled={!formData.amount || !formData.projectId}
+                  className="cursor-pointer rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   Add Payment
                 </button>
@@ -230,6 +360,7 @@ export default function PaymentsPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

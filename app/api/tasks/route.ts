@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getCurrentUser } from '@/lib/auth'
+import { getOrganization, getOrganizationWithUser } from '@/lib/getOrganization'
 import { taskSchema } from '@/lib/validations'
 
 export async function GET(request: NextRequest) {
+  console.log('GET /api/tasks - Starting request')
+  
   try {
-    const user = await getCurrentUser()
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { organizationId } = await getOrganizationWithUser()
+    console.log('GET /api/tasks - Organization ID:', organizationId)
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
@@ -17,7 +16,7 @@ export async function GET(request: NextRequest) {
     const assigneeId = searchParams.get('assigneeId')
 
     const where: any = {
-      project: { organizationId: user.organizationId },
+      project: { organizationId },
     }
     
     if (status) where.status = status
@@ -34,9 +33,18 @@ export async function GET(request: NextRequest) {
       orderBy: { dueDate: 'asc' },
     })
 
+    console.log('GET /api/tasks - Successfully retrieved', tasks.length, 'tasks')
     return NextResponse.json(tasks)
   } catch (error: any) {
-    console.error('Get tasks error:', error)
+    console.error('GET /api/tasks - Error:', error)
+    
+    if (error.message.includes('No organization found')) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      )
+    }
+    
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
@@ -45,25 +53,28 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('POST /api/tasks - Starting request')
+  
   try {
-    const user = await getCurrentUser()
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { organizationId, user } = await getOrganizationWithUser()
+    console.log('POST /api/tasks - Organization ID:', organizationId, 'User:', user?.userId)
 
     const body = await request.json()
+    console.log('POST /api/tasks - Request body:', body)
+    
     const validatedData = taskSchema.parse(body)
+    console.log('POST /api/tasks - Validated data:', validatedData)
 
-    // Verify project belongs to user's organization
+    // Verify project belongs to organization
     const project = await prisma.project.findFirst({
       where: {
         id: validatedData.projectId,
-        organizationId: user.organizationId,
+        organizationId,
       },
     })
 
     if (!project) {
+      console.error('POST /api/tasks - Project not found or does not belong to organization')
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
@@ -71,7 +82,7 @@ export async function POST(request: NextRequest) {
       data: {
         ...validatedData,
         dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
-        creatorId: user.userId,
+        creatorId: user?.userId || 'system',
       },
       include: {
         project: { select: { id: true, name: true } },
@@ -80,13 +91,15 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    console.log('POST /api/tasks - Task created successfully:', task.id)
+
     // Create activity log
     await prisma.activity.create({
       data: {
         type: 'TASK_UPDATE',
         title: `Task created: ${task.title}`,
-        organizationId: user.organizationId,
-        userId: user.userId,
+        organizationId,
+        userId: user?.userId,
         projectId: task.projectId,
         taskId: task.id,
       },
@@ -94,7 +107,15 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(task, { status: 201 })
   } catch (error: any) {
-    console.error('Create task error:', error)
+    console.error('POST /api/tasks - Error:', error)
+    
+    if (error.message.includes('No organization found')) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      )
+    }
+    
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }

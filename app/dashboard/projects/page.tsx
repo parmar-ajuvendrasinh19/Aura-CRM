@@ -18,26 +18,68 @@ interface Project {
   }
 }
 
+interface Client {
+  id: string
+  name: string
+}
+
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+  const [clients, setClients] = useState<Client[]>([])
+  const [formError, setFormError] = useState('')
+  
+  // Form state with controlled components
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    serviceType: '',
+    status: 'ACTIVE',
+    value: '',
+    deadline: '',
+    clientId: '',
+  })
 
   useEffect(() => {
     fetchProjects()
+    fetchClients()
   }, [])
 
-  async function fetchProjects() {
+  async function fetchClients() {
     try {
-      const response = await fetch('/api/projects')
+      const response = await fetch('/api/clients')
       if (response.ok) {
         const data = await response.json()
+        setClients(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch clients:', error)
+    }
+  }
+
+  async function fetchProjects() {
+    console.log('Fetching projects...')
+    try {
+      const response = await fetch('/api/projects')
+      console.log('Projects API response status:', response.status)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Projects fetched successfully:', data.length, 'projects')
         setProjects(data)
+      } else {
+        const errorData = await response.json()
+        console.error('Failed to fetch projects:', errorData)
+        setErrorMessage(errorData.error || 'Failed to fetch projects')
       }
     } catch (error) {
       console.error('Failed to fetch projects:', error)
+      setErrorMessage('Network error. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -64,9 +106,22 @@ export default function ProjectsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
           <p className="mt-2 text-gray-600">Manage your agency projects</p>
         </div>
+        {successMessage && (
+          <div className="rounded-lg bg-green-50 px-4 py-2 text-sm font-medium text-green-800">
+            {successMessage}
+          </div>
+        )}
+        {errorMessage && (
+          <div className="rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-800">
+            {errorMessage}
+          </div>
+        )}
         <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+          onClick={() => {
+            console.log('Add Project button clicked')
+            setShowModal(true)
+          }}
+          className="flex cursor-pointer items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
         >
           <Plus className="mr-2 h-4 w-4" />
           Add Project
@@ -146,22 +201,50 @@ export default function ProjectsPage() {
 
       {/* Add Project Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-md rounded-lg bg-white p-6">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          onClick={() => {
+            console.log('Modal backdrop clicked')
+            setShowModal(false)
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-lg bg-white p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 className="mb-4 text-xl font-bold text-gray-900">Add New Project</h2>
             <form
               onSubmit={async (e) => {
                 e.preventDefault()
-                const formData = new FormData(e.currentTarget)
-                const data = {
-                  name: formData.get('name') as string,
-                  description: formData.get('description') as string,
-                  serviceType: formData.get('serviceType') as string,
-                  status: formData.get('status') as string,
-                  value: formData.get('value') ? parseFloat(formData.get('value') as string) : null,
-                  deadline: formData.get('deadline') as string,
-                  clientId: formData.get('clientId') as string,
+                setErrorMessage('')
+                setSuccessMessage('')
+                setFormError('')
+                
+                // Frontend validation
+                if (!formData.name.trim()) {
+                  setFormError('Project name is required')
+                  return
                 }
+                if (!formData.serviceType) {
+                  setFormError('Service type is required')
+                  return
+                }
+                if (!formData.clientId) {
+                  setFormError('Client is required')
+                  return
+                }
+                
+                const data = {
+                  name: formData.name,
+                  description: formData.description || null,
+                  serviceType: formData.serviceType,
+                  status: formData.status,
+                  value: formData.value ? parseFloat(formData.value) : null,
+                  deadline: formData.deadline || null,
+                  clientId: formData.clientId,
+                }
+
+                console.log('Submitting project:', data)
 
                 try {
                   const response = await fetch('/api/projects', {
@@ -169,38 +252,65 @@ export default function ProjectsPage() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data),
                   })
+                  
+                  console.log('Project API response status:', response.status)
+                  
+                  const responseData = await response.json()
+                  console.log('Project API response data:', responseData)
+                  
                   if (response.ok) {
+                    setSuccessMessage('Project created successfully!')
                     setShowModal(false)
+                    // Reset form
+                    setFormData({
+                      name: '',
+                      description: '',
+                      serviceType: '',
+                      status: 'ACTIVE',
+                      value: '',
+                      deadline: '',
+                      clientId: '',
+                    })
                     fetchProjects()
+                    setTimeout(() => setSuccessMessage(''), 3000)
+                  } else {
+                    setErrorMessage(responseData.error || 'Failed to create project')
                   }
                 } catch (error) {
                   console.error('Failed to create project:', error)
+                  setErrorMessage('Network error. Please try again.')
                 }
               }}
               className="space-y-4"
             >
+              {formError && (
+                <div className="rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-800">
+                  {formError}
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700">Project Name *</label>
                 <input
-                  name="name"
                   type="text"
-                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Description</label>
                 <textarea
-                  name="description"
                   rows={3}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Service Type *</label>
                 <select
-                  name="serviceType"
-                  required
+                  value={formData.serviceType}
+                  onChange={(e) => setFormData({ ...formData, serviceType: e.target.value })}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
                 >
                   <option value="">Select service type</option>
@@ -214,9 +324,25 @@ export default function ProjectsPage() {
                 </select>
               </div>
               <div>
+                <label className="block text-sm font-medium text-gray-700">Client *</label>
+                <select
+                  value={formData.clientId}
+                  onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+                >
+                  <option value="">Select client</option>
+                  {clients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700">Status</label>
                 <select
-                  name="status"
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
                 >
                   <option value="ACTIVE">Active</option>
@@ -228,31 +354,37 @@ export default function ProjectsPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700">Value (₹)</label>
                 <input
-                  name="value"
                   type="number"
                   step="0.01"
+                  value={formData.value}
+                  onChange={(e) => setFormData({ ...formData, value: e.target.value })}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Deadline</label>
                 <input
-                  name="deadline"
                   type="date"
+                  value={formData.deadline}
+                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
                 />
               </div>
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
-                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                  onClick={() => {
+                    console.log('Cancel button clicked')
+                    setShowModal(false)
+                  }}
+                  className="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                  disabled={!formData.name || !formData.serviceType || !formData.clientId}
+                  className="cursor-pointer rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   Add Project
                 </button>

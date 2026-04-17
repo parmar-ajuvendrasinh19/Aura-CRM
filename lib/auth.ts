@@ -1,11 +1,11 @@
-import jwt from 'jsonwebtoken'
+import jwt, { SignOptions } from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { cookies } from 'next/headers'
 
 const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || '15m'
 const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRY || '7d'
-const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'access-secret'
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'refresh-secret'
+const JWT_ACCESS_SECRET = (process.env.JWT_ACCESS_SECRET || 'access-secret') as string
+const JWT_REFRESH_SECRET = (process.env.JWT_REFRESH_SECRET || 'refresh-secret') as string
 
 export interface TokenPayload {
   userId: string
@@ -26,15 +26,11 @@ export async function verifyPassword(
 }
 
 export function generateAccessToken(payload: TokenPayload): string {
-  return jwt.sign(payload, JWT_ACCESS_SECRET, {
-    expiresIn: ACCESS_TOKEN_EXPIRY,
-  })
+  return jwt.sign(payload, JWT_ACCESS_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRY } as SignOptions)
 }
 
 export function generateRefreshToken(payload: TokenPayload): string {
-  return jwt.sign(payload, JWT_REFRESH_SECRET, {
-    expiresIn: REFRESH_TOKEN_EXPIRY,
-  })
+  return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRY } as SignOptions)
 }
 
 export function verifyAccessToken(token: string): TokenPayload | null {
@@ -84,7 +80,18 @@ export async function getCurrentUser(): Promise<TokenPayload | null> {
   const cookieStore = cookies()
   const accessToken = cookieStore.get('accessToken')?.value
   
-  if (!accessToken) return null
+  console.log('getCurrentUser - accessToken exists:', !!accessToken)
   
-  return verifyAccessToken(accessToken)
+  if (!accessToken) {
+    console.log('getCurrentUser - No accessToken found in cookies')
+    return null
+  }
+  
+  const payload = verifyAccessToken(accessToken)
+  console.log('getCurrentUser - Token verification result:', !!payload)
+  if (payload) {
+    console.log('getCurrentUser - User data:', { userId: payload.userId, organizationId: payload.organizationId })
+  }
+  
+  return payload
 }

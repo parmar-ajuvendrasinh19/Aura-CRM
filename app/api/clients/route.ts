@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getCurrentUser } from '@/lib/auth'
+import { getOrganization } from '@/lib/getOrganization'
 import { clientSchema } from '@/lib/validations'
 
 export async function GET(request: NextRequest) {
+  console.log('GET /api/clients - Starting request')
+  
   try {
-    const user = await getCurrentUser()
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const organizationId = await getOrganization()
+    console.log('GET /api/clients - Organization ID:', organizationId)
 
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
 
-    const where: any = { organizationId: user.organizationId }
+    const where: any = { organizationId }
     
     if (search) {
       where.OR = [
@@ -40,9 +39,19 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
 
+    console.log('GET /api/clients - Successfully retrieved', clients.length, 'clients')
     return NextResponse.json(clients)
   } catch (error: any) {
-    console.error('Get clients error:', error)
+    console.error('GET /api/clients - Error:', error)
+    
+    // Handle specific error cases
+    if (error.message.includes('No organization found')) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      )
+    }
+    
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
@@ -51,26 +60,38 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('POST /api/clients - Starting request')
+  
   try {
-    const user = await getCurrentUser()
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const organizationId = await getOrganization()
+    console.log('POST /api/clients - Organization ID:', organizationId)
 
     const body = await request.json()
+    console.log('POST /api/clients - Request body:', body)
+    
     const validatedData = clientSchema.parse(body)
+    console.log('POST /api/clients - Validated data:', validatedData)
 
     const client = await prisma.client.create({
       data: {
         ...validatedData,
-        organizationId: user.organizationId,
+        organizationId,
       },
     })
 
+    console.log('POST /api/clients - Client created successfully:', client.id)
     return NextResponse.json(client, { status: 201 })
   } catch (error: any) {
-    console.error('Create client error:', error)
+    console.error('POST /api/clients - Error:', error)
+    
+    // Handle specific error cases
+    if (error.message.includes('No organization found')) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      )
+    }
+    
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
