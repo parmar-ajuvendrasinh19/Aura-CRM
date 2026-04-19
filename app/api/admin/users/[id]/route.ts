@@ -3,19 +3,22 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/server-auth'
 
 /**
- * DELETE /api/users/delete
- * Body: { email?: string, id?: string }
+ * DELETE /api/admin/users/[id]
  * 
- * Deletes a user and handles related records:
+ * Deletes a user and handles related records securely.
+ * Only accessible by ADMIN users.
+ * 
+ * Transaction includes:
  * - Refresh tokens: deleted
  * - Assigned tasks: unassigned (assigneeId set to null)
  * - Created tasks: deleted (cascade)
  * - Activities: userId set to null
  */
-
-export async function DELETE(request: NextRequest) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    // 1. Authenticate current user
     const currentUser = await getCurrentUser()
     
     if (!currentUser) {
@@ -27,22 +30,19 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
     }
 
-    // 2. Parse request body
-    const body = await request.json()
-    const { email, id } = body
+    const userId = params.id
 
-    if (!email && !id) {
+    // Prevent self-deletion
+    if (userId === currentUser.userId) {
       return NextResponse.json(
-        { error: 'Bad Request - Provide email or id' },
+        { error: 'Cannot delete yourself' },
         { status: 400 }
       )
     }
 
-    // 3. Find user to delete
-    const whereClause = email ? { email } : { id }
-    
+    // Find user to delete
     const targetUser = await prisma.user.findUnique({
-      where: whereClause,
+      where: { id: userId },
       include: {
         _count: {
           select: {
@@ -62,33 +62,40 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Prevent self-deletion
-    if (targetUser.id === currentUser.userId) {
+    // Prevent deleting the last admin
+    const adminCount = await prisma.user.count({
+      where: { role: 'ADMIN' }
+    })
+
+    if (adminCount === 1 && targetUser.role === 'ADMIN') {
       return NextResponse.json(
-        { error: 'Cannot delete yourself' },
+        { error: 'Cannot delete the last admin in the system' },
         { status: 400 }
       )
     }
 
-    // 4. Delete user and related records in transaction
+    // Log admin action
+    console.log(`Admin ${currentUser.email} deleted user: ${targetUser.email} (ID: ${targetUser.id})`)
+
+    // Delete user and related records in transaction
     await prisma.$transaction(async (tx) => {
       // Delete refresh tokens
       await tx.refreshToken.deleteMany({
         where: { userId: targetUser.id }
       })
 
-      // Unassign tasks
+      // Unassign tasks (set assigneeId to null)
       await tx.task.updateMany({
         where: { assigneeId: targetUser.id },
         data: { assigneeId: null }
       })
 
-      // Delete tasks created by user
+      // Delete tasks created by user (cascade)
       await tx.task.deleteMany({
         where: { creatorId: targetUser.id }
       })
 
-      // Update activities
+      // Update activities (set userId to null)
       await tx.activity.updateMany({
         where: { userId: targetUser.id },
         data: { userId: null }

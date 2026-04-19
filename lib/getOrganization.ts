@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
-import { getCurrentUser, TokenPayload } from '@/lib/auth'
+import { getCurrentUser } from '@/lib/server-auth'
+import { TokenPayload } from '@/lib/auth'
 
 /**
  * Gets the organization ID for the current request.

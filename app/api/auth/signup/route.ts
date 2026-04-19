@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { hashPassword, generateAccessToken, generateRefreshToken, setAuthCookies } from '@/lib/auth'
+import { hashPassword, generateAccessToken, generateRefreshToken } from '@/lib/auth'
+import { setAuthCookies } from '@/lib/server-auth'
 import { signupSchema } from '@/lib/validations'
 
 export async function POST(request: NextRequest) {
@@ -40,14 +41,22 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Create user (admin)
+    // Check if any admin exists in the system
+    const adminExists = await prisma.user.findFirst({
+      where: { role: 'ADMIN' }
+    })
+
+    // Assign role: ADMIN if no admin exists, otherwise USER
+    const userRole = adminExists ? 'USER' : 'ADMIN'
+
+    // Create user (role assigned based on admin existence)
     const hashedPassword = await hashPassword(validatedData.password)
     const user = await prisma.user.create({
       data: {
         email: validatedData.email,
         password: hashedPassword,
         name: validatedData.name,
-        role: 'ADMIN',
+        role: userRole,
         organizationId: organization.id,
       },
     })

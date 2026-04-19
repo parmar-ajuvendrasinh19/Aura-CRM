@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { 
@@ -10,11 +11,12 @@ import {
   TrendingUp,
   DollarSign,
   Settings,
-  LogOut
+  LogOut,
+  Shield
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const navigation = [
+const userMenu = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Clients', href: '/dashboard/clients', icon: Users },
   { name: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
@@ -24,9 +26,30 @@ const navigation = [
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
+const adminMenu = [
+  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+]
+
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
+  const [userRole, setUserRole] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        const response = await fetch('/api/auth/me')
+        if (response.ok) {
+          const data = await response.json()
+          console.log('Sidebar - User role:', data.user.role)
+          setUserRole(data.user.role)
+        }
+      } catch (error) {
+        console.error('Failed to fetch user role:', error)
+      }
+    }
+    fetchUserRole()
+  }, [])
 
   async function handleLogout() {
     try {
@@ -43,7 +66,22 @@ export function Sidebar() {
         <h1 className="text-xl font-bold text-white">Aura CRM</h1>
       </div>
       <nav className="flex-1 space-y-1 px-3 py-4">
-        {navigation.map((item) => {
+        {userRole === 'ADMIN' && (
+          <Link
+            href="/admin/users"
+            className={cn(
+              'flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors mb-2',
+              pathname.startsWith('/admin')
+                ? 'bg-purple-600 text-white'
+                : 'text-purple-300 hover:bg-purple-900 hover:text-white'
+            )}
+          >
+            <Shield className="mr-3 h-5 w-5" />
+            Admin Panel
+          </Link>
+        )}
+
+        {(userRole === 'ADMIN' ? adminMenu : userMenu).map((item) => {
           const isActive = pathname === item.href
           return (
             <Link

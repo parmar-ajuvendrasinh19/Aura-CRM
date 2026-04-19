@@ -3,10 +3,10 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/server-auth'
 
 /**
- * DELETE /api/users/delete
- * Body: { email?: string, id?: string }
+ * DELETE /api/account/delete
  * 
- * Deletes a user and handles related records:
+ * Allows a user to delete their own account.
+ * Handles related records:
  * - Refresh tokens: deleted
  * - Assigned tasks: unassigned (assigneeId set to null)
  * - Created tasks: deleted (cascade)
@@ -22,27 +22,9 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Only admins can delete users
-    if (currentUser.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
-    }
-
-    // 2. Parse request body
-    const body = await request.json()
-    const { email, id } = body
-
-    if (!email && !id) {
-      return NextResponse.json(
-        { error: 'Bad Request - Provide email or id' },
-        { status: 400 }
-      )
-    }
-
-    // 3. Find user to delete
-    const whereClause = email ? { email } : { id }
-    
+    // 2. Find user to delete (must be themselves)
     const targetUser = await prisma.user.findUnique({
-      where: whereClause,
+      where: { id: currentUser.userId },
       include: {
         _count: {
           select: {
@@ -62,15 +44,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Prevent self-deletion
-    if (targetUser.id === currentUser.userId) {
-      return NextResponse.json(
-        { error: 'Cannot delete yourself' },
-        { status: 400 }
-      )
-    }
-
-    // 4. Delete user and related records in transaction
+    // 3. Delete user and related records in transaction
     await prisma.$transaction(async (tx) => {
       // Delete refresh tokens
       await tx.refreshToken.deleteMany({
@@ -102,22 +76,11 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `User ${targetUser.email} deleted successfully`,
-      deletedUser: {
-        id: targetUser.id,
-        email: targetUser.email,
-        name: targetUser.name,
-      },
-      affectedRecords: {
-        refreshTokens: targetUser._count.refreshTokens,
-        unassignedTasks: targetUser._count.assignedTasks,
-        deletedTasks: targetUser._count.createdTasks,
-        activitiesUpdated: targetUser._count.activities,
-      }
+      message: 'Account deleted successfully'
     })
 
   } catch (error: any) {
-    console.error('Delete user error:', error)
+    console.error('Delete account error:', error)
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }

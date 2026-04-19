@@ -21,13 +21,13 @@ async function main() {
   console.log('Created organization:', organization.name)
 
   // Create default admin user
-  const hashedPassword = await bcrypt.hash('password123', 12)
+  const hashedPassword = await bcrypt.hash('ajjurutansh1115', 12)
   
   const user = await prisma.user.upsert({
-    where: { email: 'admin@agency-crm.com' },
+    where: { email: 'webauraelevating@gmail.com' },
     update: {},
     create: {
-      email: 'admin@agency-crm.com',
+      email: 'webauraelevating@gmail.com',
       password: hashedPassword,
       name: 'Admin User',
       role: 'ADMIN',
@@ -37,8 +37,8 @@ async function main() {
 
   console.log('Created user:', user.email)
   console.log('Default login credentials:')
-  console.log('Email: admin@agency-crm.com')
-  console.log('Password: password123')
+  console.log('Email: webauraelevating@gmail.com')
+  console.log('Password: ajjurutansh1115')
   console.log('Organization ID:', organization.id)
 }
 
