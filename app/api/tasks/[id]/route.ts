@@ -82,19 +82,16 @@ export async function PATCH(
       },
     })
 
-    // Log status change
-    if (validatedData.status) {
-      await prisma.activity.create({
-        data: {
-          type: 'STATUS_CHANGE',
-          title: `Task status changed to ${validatedData.status}`,
-          organizationId: user.organizationId,
-          userId: user.userId,
-          projectId: updatedTask?.projectId,
-          taskId: params.id,
-        },
-      })
-    }
+    // Log activity
+    await prisma.activityLog.create({
+      data: {
+        userId: user.userId,
+        action: "UPDATE_TASK",
+        entityType: "TASK",
+        entityId: params.id,
+        description: `Updated task: ${updatedTask?.title}`
+      }
+    })
 
     return NextResponse.json(updatedTask)
   } catch (error: any) {
@@ -117,6 +114,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get task details before deletion for logging
+    const taskToDelete = await prisma.task.findUnique({
+      where: { id: params.id },
+    })
+
     const task = await prisma.task.deleteMany({
       where: {
         id: params.id,
@@ -127,6 +129,17 @@ export async function DELETE(
     if (task.count === 0) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })
     }
+
+    // Log activity
+    await prisma.activityLog.create({
+      data: {
+        userId: user.userId,
+        action: "DELETE_TASK",
+        entityType: "TASK",
+        entityId: params.id,
+        description: `Deleted task: ${taskToDelete?.title}`
+      }
+    })
 
     return NextResponse.json({ message: 'Task deleted successfully' })
   } catch (error: any) {

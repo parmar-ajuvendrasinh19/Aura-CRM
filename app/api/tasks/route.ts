@@ -93,16 +93,15 @@ export async function POST(request: NextRequest) {
 
     console.log('POST /api/tasks - Task created successfully:', task.id)
 
-    // Create activity log
-    await prisma.activity.create({
+    // Log activity
+    await prisma.activityLog.create({
       data: {
-        type: 'TASK_UPDATE',
-        title: `Task created: ${task.title}`,
-        organizationId,
-        userId: user?.userId,
-        projectId: task.projectId,
-        taskId: task.id,
-      },
+        userId: user?.userId || 'system',
+        action: "CREATE_TASK",
+        entityType: "TASK",
+        entityId: task.id,
+        description: `Created new task: ${task.title}`
+      }
     })
 
     return NextResponse.json(task, { status: 201 })

@@ -85,6 +85,17 @@ export async function PATCH(
       include: { client: true },
     })
 
+    // Log activity
+    await prisma.activityLog.create({
+      data: {
+        userId: user.userId,
+        action: "UPDATE_PROJECT",
+        entityType: "PROJECT",
+        entityId: params.id,
+        description: `Updated project: ${updatedProject?.name}`
+      }
+    })
+
     return NextResponse.json(updatedProject)
   } catch (error: any) {
     console.error('Update project error:', error)
@@ -106,6 +117,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get project details before deletion for logging
+    const projectToDelete = await prisma.project.findUnique({
+      where: { id: params.id },
+    })
+
     const project = await prisma.project.deleteMany({
       where: {
         id: params.id,
@@ -116,6 +132,17 @@ export async function DELETE(
     if (project.count === 0) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
+
+    // Log activity
+    await prisma.activityLog.create({
+      data: {
+        userId: user.userId,
+        action: "DELETE_PROJECT",
+        entityType: "PROJECT",
+        entityId: params.id,
+        description: `Deleted project: ${projectToDelete?.name}`
+      }
+    })
 
     return NextResponse.json({ message: 'Project deleted successfully' })
   } catch (error: any) {

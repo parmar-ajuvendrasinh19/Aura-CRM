@@ -3,36 +3,90 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Loader2 } from 'lucide-react'
+import Input from '@/components/ui/Input'
+import PasswordInput from '@/components/ui/PasswordInput'
+import PhoneInput from '@/components/ui/PhoneInput'
 
 export default function SignupPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    phone: '',
+    organizationName: '',
+  })
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {}
+
+    if (!formData.fullName.trim()) {
+      errors.fullName = 'Full name is required'
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Invalid email format'
+    }
+
+    if (!formData.password) {
+      errors.password = 'Password is required'
+    } else if (formData.password.length < 8) {
+      errors.password = 'Password must be at least 8 characters'
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      errors.password = 'Password must contain uppercase, lowercase, and number'
+    }
+
+    if (!formData.phone.trim()) {
+      errors.phone = 'Phone number is required'
+    } else if (!/^\d{10}$/.test(formData.phone)) {
+      errors.phone = 'Please enter a valid 10-digit phone number'
+    }
+
+    if (!formData.organizationName.trim()) {
+      errors.organizationName = 'Organization name is required'
+    }
+
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const isFormValid = () => {
+    return (
+      formData.fullName.trim() &&
+      formData.email.trim() &&
+      formData.password &&
+      formData.phone.trim() &&
+      formData.organizationName.trim() &&
+      agreedToTerms
+    )
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    console.log('Signup form submitted')
-    setIsLoading(true)
     setError('')
 
-    const formData = new FormData(e.currentTarget)
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const name = formData.get('name') as string
-    const organizationName = formData.get('organizationName') as string
-    const organizationEmail = formData.get('organizationEmail') as string
+    if (!validateForm()) {
+      return
+    }
+
+    setIsLoading(true)
 
     try {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email,
-          password,
-          name,
-          organizationName,
-          organizationEmail,
+          name: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+          organizationName: formData.organizationName,
         }),
       })
 
@@ -49,133 +103,131 @@ export default function SignupPage() {
     }
   }
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Create Account</h1>
-          <p className="mt-2 text-gray-600">
-            Start managing your agency projects
-          </p>
-        </div>
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => ({ ...prev, [field]: '' }))
+    }
+  }
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-12">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Create Account</h1>
+            <p className="mt-2 text-gray-600">
+              Start managing your agency projects
+            </p>
+          </div>
+
           {error && (
-            <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
+            <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
               {error}
             </div>
           )}
 
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Your Name
-              </label>
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            <Input
+              id="fullName"
+              label="Full Name"
+              type="text"
+              placeholder="John Doe"
+              value={formData.fullName}
+              onChange={(e) => handleInputChange('fullName', e.target.value)}
+              error={fieldErrors.fullName}
+              required
+            />
+
+            <Input
+              id="email"
+              label="Work Email"
+              type="email"
+              placeholder="john@company.com"
+              autoComplete="email"
+              value={formData.email}
+              onChange={(e) => handleInputChange('email', e.target.value)}
+              error={fieldErrors.email}
+              required
+            />
+
+            <PasswordInput
+              id="password"
+              label="Password"
+              value={formData.password}
+              onChange={(e) => handleInputChange('password', e.target.value)}
+              error={fieldErrors.password}
+              autoComplete="new-password"
+              placeholder="Create a strong password"
+              required
+            />
+
+            <PhoneInput
+              id="phone"
+              label="Phone Number"
+              type="tel"
+              placeholder="9876543210"
+              value={formData.phone}
+              onChange={(e) => handleInputChange('phone', e.target.value)}
+              error={fieldErrors.phone}
+              required
+            />
+
+            <Input
+              id="organizationName"
+              label="Organization Name"
+              type="text"
+              placeholder="Your Company"
+              value={formData.organizationName}
+              onChange={(e) => handleInputChange('organizationName', e.target.value)}
+              error={fieldErrors.organizationName}
+              required
+            />
+
+            <div className="flex items-start">
               <input
-                id="name"
-                name="name"
-                type="text"
+                id="terms"
+                type="checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
                 required
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
               />
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Your Email
+              <label htmlFor="terms" className="ml-2 text-sm text-gray-600">
+                I agree to the{' '}
+                <Link href="/terms" className="font-medium text-red-600 hover:text-red-500">
+                  Terms of Service
+                </Link>{' '}
+                and{' '}
+                <Link href="/privacy" className="font-medium text-red-600 hover:text-red-500">
+                  Privacy Policy
+                </Link>
               </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
-              />
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="relative mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  required
-                  minLength={8}
-                  className="block w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    console.log('Password toggle clicked')
-                    setShowPassword(!showPassword)
-                  }}
-                  className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                >
-                  {showPassword ? (
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                    </svg>
-                  ) : (
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
+            <button
+              type="submit"
+              disabled={!isFormValid() || isLoading}
+              className="w-full flex items-center justify-center rounded-lg bg-red-600 px-4 py-3.5 text-base font-semibold text-white shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                'Get Started'
+              )}
+            </button>
 
-            <div className="border-t border-gray-200 pt-4">
-              <p className="text-sm font-medium text-gray-700">Organization Details</p>
-            </div>
-
-            <div>
-              <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700">
-                Organization Name
-              </label>
-              <input
-                id="organizationName"
-                name="organizationName"
-                type="text"
-                required
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="organizationEmail" className="block text-sm font-medium text-gray-700">
-                Organization Email
-              </label>
-              <input
-                id="organizationEmail"
-                name="organizationEmail"
-                type="email"
-                required
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="cursor-pointer flex w-full justify-center rounded-lg bg-primary-600 px-3 py-3 text-sm font-semibold text-white hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Creating account...' : 'Create Account'}
-          </button>
-
-          <p className="text-center text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link href="/login" className="font-semibold text-primary-600 hover:text-primary-500">
-              Sign in
-            </Link>
-          </p>
-        </form>
+            <p className="text-center text-sm text-gray-600">
+              Already have an account?{' '}
+              <Link href="/login" className="font-semibold text-red-600 hover:text-red-500">
+                Sign in
+              </Link>
+            </p>
+          </form>
+        </div>
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { 
   Search, 
   Trash2, 
@@ -8,7 +9,8 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
-  UserPlus
+  UserPlus,
+  Activity
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -29,6 +31,7 @@ interface Pagination {
 }
 
 export default function AdminUsersPage() {
+  const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
   const [pagination, setPagination] = useState<Pagination | null>(null)
   const [loading, setLoading] = useState(true)
@@ -277,6 +280,13 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                     <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => router.push(`/admin/users/${user.id}/activity`)}
+                        className="inline-flex items-center rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+                      >
+                        <Activity className="mr-1.5 h-4 w-4" />
+                        Activity
+                      </button>
                       {user.role !== 'ADMIN' && (
                         <button
                           onClick={() => handlePromote(user)}

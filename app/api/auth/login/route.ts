@@ -59,6 +59,15 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Log login activity
+    await prisma.activityLog.create({
+      data: {
+        userId: user.id,
+        action: "LOGIN",
+        description: "User logged in"
+      }
+    })
+
     // Set cookies
     setAuthCookies(accessToken, refreshToken)
 

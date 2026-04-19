@@ -79,6 +79,17 @@ export async function PATCH(
       where: { id: params.id },
     })
 
+    // Log activity
+    await prisma.activityLog.create({
+      data: {
+        userId: user.userId,
+        action: "UPDATE_CLIENT",
+        entityType: "CLIENT",
+        entityId: params.id,
+        description: `Updated client: ${updatedClient?.name}`
+      }
+    })
+
     return NextResponse.json(updatedClient)
   } catch (error: any) {
     console.error('Update client error:', error)
@@ -100,6 +111,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get client details before deletion for logging
+    const clientToDelete = await prisma.client.findUnique({
+      where: { id: params.id },
+    })
+
     const client = await prisma.client.deleteMany({
       where: {
         id: params.id,
@@ -110,6 +126,17 @@ export async function DELETE(
     if (client.count === 0) {
       return NextResponse.json({ error: 'Client not found' }, { status: 404 })
     }
+
+    // Log activity
+    await prisma.activityLog.create({
+      data: {
+        userId: user.userId,
+        action: "DELETE_CLIENT",
+        entityType: "CLIENT",
+        entityId: params.id,
+        description: `Deleted client: ${clientToDelete?.name}`
+      }
+    })
 
     return NextResponse.json({ message: 'Client deleted successfully' })
   } catch (error: any) {

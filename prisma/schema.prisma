@@ -95,6 +95,7 @@ model User {
   assignedTasks  Task[]         @relation("TaskAssignee")
   createdTasks   Task[]         @relation("TaskCreator")
   activities     Activity[]
+  activityLogs   ActivityLog[]
 
   @@index([email])
   @@index([organizationId])
@@ -262,4 +263,21 @@ model Payment {
   @@index([clientId])
   @@index([projectId])
   @@index([status])
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  userId      String
+  action      String
+  entityType  String?
+  entityId    String?
+  description String
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
 }

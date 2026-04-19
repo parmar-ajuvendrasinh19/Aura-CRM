@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getOrganization } from '@/lib/getOrganization'
+import { getOrganization, getOrganizationWithUser } from '@/lib/getOrganization'
 import { projectSchema } from '@/lib/validations'
 
 export async function GET(request: NextRequest) {
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
   console.log('POST /api/projects - Starting request')
   
   try {
-    const organizationId = await getOrganization()
+    const { organizationId, user } = await getOrganizationWithUser()
     console.log('POST /api/projects - Organization ID:', organizationId)
 
     const body = await request.json()
@@ -80,6 +80,17 @@ export async function POST(request: NextRequest) {
       include: {
         client: true,
       },
+    })
+
+    // Log activity
+    await prisma.activityLog.create({
+      data: {
+        userId: user?.userId || 'system',
+        action: "CREATE_PROJECT",
+        entityType: "PROJECT",
+        entityId: project.id,
+        description: `Created new project: ${project.name}`
+      }
     })
 
     console.log('POST /api/projects - Project created successfully:', project.id)

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getOrganization } from '@/lib/getOrganization'
+import { getOrganization, getOrganizationWithUser } from '@/lib/getOrganization'
 import { dealSchema } from '@/lib/validations'
 
 export async function GET(request: NextRequest) {
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
   console.log('POST /api/deals - Starting request')
   
   try {
-    const organizationId = await getOrganization()
+    const { organizationId, user } = await getOrganizationWithUser()
     console.log('POST /api/deals - Organization ID:', organizationId)
 
     const body = await request.json()
@@ -69,6 +69,17 @@ export async function POST(request: NextRequest) {
       include: {
         client: true,
       },
+    })
+
+    // Log activity
+    await prisma.activityLog.create({
+      data: {
+        userId: user?.userId || 'system',
+        action: "CREATE_DEAL",
+        entityType: "DEAL",
+        entityId: deal.id,
+        description: `Created new deal: ${deal.title}`
+      }
     })
 
     console.log('POST /api/deals - Deal created successfully:', deal.id)
