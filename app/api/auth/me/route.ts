@@ -13,10 +13,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get full user data with organization
+    // Get full user data
     const fullUser = await prisma.user.findUnique({
       where: { id: user.userId },
-      include: { organization: true },
     })
 
     if (!fullUser) {
@@ -33,13 +32,6 @@ export async function GET(request: NextRequest) {
         name: fullUser.name,
         role: fullUser.role,
         avatar: fullUser.avatar,
-      },
-      organization: {
-        id: fullUser.organization.id,
-        name: fullUser.organization.name,
-        email: fullUser.organization.email,
-        phone: fullUser.organization.phone,
-        address: fullUser.organization.address,
       },
     })
   } catch (error: any) {

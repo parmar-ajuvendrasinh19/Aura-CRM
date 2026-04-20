@@ -65,7 +65,6 @@ export async function GET(request: NextRequest) {
         avatar: true,
         isActive: true,
         createdAt: true,
-        organizationId: true,
       },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * limit,

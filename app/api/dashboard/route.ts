@@ -10,8 +10,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const organizationId = user.organizationId
-
     // Get counts
     const [
       totalClients,
@@ -26,47 +24,40 @@ export async function GET(request: NextRequest) {
       totalPayments,
       paidPayments,
     ] = await Promise.all([
-      prisma.client.count({ where: { organizationId } }),
+      prisma.client.count(),
       prisma.client.count({
         where: {
-          organizationId,
           projects: { some: { status: 'ACTIVE' } },
         },
       }),
-      prisma.project.count({ where: { organizationId } }),
-      prisma.project.count({ where: { organizationId, status: 'ACTIVE' } }),
-      prisma.task.count({
-        where: { project: { organizationId } },
-      }),
+      prisma.project.count(),
+      prisma.project.count({ where: { status: 'ACTIVE' } }),
+      prisma.task.count(),
       prisma.task.count({
         where: {
-          project: { organizationId },
-          status: 'DONE',
+          status: 'COMPLETED',
         },
       }),
       prisma.task.count({
         where: {
-          project: { organizationId },
           status: { in: ['TODO', 'IN_PROGRESS', 'REVIEW'] },
           dueDate: { lt: new Date() },
         },
       }),
-      prisma.deal.count({ where: { organizationId } }),
-      prisma.deal.count({ where: { organizationId, stage: 'WON' } }),
-      prisma.payment.count({ where: { organizationId } }),
-      prisma.payment.count({ where: { organizationId, status: 'PAID' } }),
+      prisma.deal.count(),
+      prisma.deal.count({ where: { stage: 'WON' } }),
+      prisma.payment.count(),
+      prisma.payment.count({ where: { status: 'PAID' } }),
     ])
 
     // Calculate revenue
     const projects = await prisma.project.findMany({
-      where: { organizationId },
       select: { value: true },
     })
 
     const totalRevenue = projects.reduce((sum: number, p: { value: number | null }) => sum + (p.value || 0), 0)
 
     const payments = await prisma.payment.findMany({
-      where: { organizationId },
       select: { amount: true },
     })
 
@@ -76,7 +67,6 @@ export async function GET(request: NextRequest) {
 
     // Get recent activities
     const recentActivities = await prisma.activity.findMany({
-      where: { organizationId },
       include: {
         user: { select: { id: true, name: true } },
         client: { select: { id: true, name: true } },
@@ -89,7 +79,6 @@ export async function GET(request: NextRequest) {
     // Get upcoming tasks
     const upcomingTasks = await prisma.task.findMany({
       where: {
-        project: { organizationId },
         status: { in: ['TODO', 'IN_PROGRESS'] },
         dueDate: { gte: new Date() },
       },
@@ -104,7 +93,6 @@ export async function GET(request: NextRequest) {
     // Get deals by stage
     const dealsByStage = await prisma.deal.groupBy({
       by: ['stage'],
-      where: { organizationId },
       _count: true,
     })
 

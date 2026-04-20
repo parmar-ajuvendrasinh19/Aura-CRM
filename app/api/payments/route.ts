@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getOrganization } from '@/lib/getOrganization'
 import { paymentSchema } from '@/lib/validations'
 
 export async function GET(request: NextRequest) {
   console.log('GET /api/payments - Starting request')
   
   try {
-    const organizationId = await getOrganization()
-    console.log('GET /api/payments - Organization ID:', organizationId)
-
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     const clientId = searchParams.get('clientId')
     const projectId = searchParams.get('projectId')
 
-    const where: any = { organizationId }
+    const where: any = {}
     
     if (status) where.status = status
     if (clientId) where.clientId = clientId
@@ -35,12 +31,6 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('GET /api/payments - Error:', error)
     
-    if (error.message.includes('No organization found')) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      )
-    }
     
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
@@ -53,9 +43,6 @@ export async function POST(request: NextRequest) {
   console.log('POST /api/payments - Starting request')
   
   try {
-    const organizationId = await getOrganization()
-    console.log('POST /api/payments - Organization ID:', organizationId)
-
     const body = await request.json()
     console.log('POST /api/payments - Request body:', body)
     
@@ -67,7 +54,6 @@ export async function POST(request: NextRequest) {
         ...validatedData,
         dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
         paidDate: validatedData.paidDate ? new Date(validatedData.paidDate) : null,
-        organizationId,
       },
       include: {
         client: { select: { id: true, name: true } },
@@ -80,12 +66,6 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('POST /api/payments - Error:', error)
     
-    if (error.message.includes('No organization found')) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      )
-    }
     
     return NextResponse.json(
       { error: error.message || 'Internal server error' },

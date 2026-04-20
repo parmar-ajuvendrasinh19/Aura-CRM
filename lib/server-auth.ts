@@ -43,7 +43,7 @@ export async function getCurrentUser(): Promise<TokenPayload | null> {
   const payload = verifyAccessToken(accessToken)
   console.log('getCurrentUser - Token verification result:', !!payload)
   if (payload) {
-    console.log('getCurrentUser - User data:', { userId: payload.userId, organizationId: payload.organizationId, role: payload.role })
+    console.log('getCurrentUser - User data:', { userId: payload.userId, role: payload.role })
   }
   
   return payload

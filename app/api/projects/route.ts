@@ -1,21 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getOrganization, getOrganizationWithUser } from '@/lib/getOrganization'
+import { getCurrentUser } from '@/lib/server-auth'
 import { projectSchema } from '@/lib/validations'
 
 export async function GET(request: NextRequest) {
   console.log('GET /api/projects - Starting request')
   
   try {
-    const organizationId = await getOrganization()
-    console.log('GET /api/projects - Organization ID:', organizationId)
-
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     const serviceType = searchParams.get('serviceType')
     const clientId = searchParams.get('clientId')
 
-    const where: any = { organizationId }
+    const where: any = {}
     
     if (status) where.status = status
     if (serviceType) where.serviceType = serviceType
@@ -61,8 +58,8 @@ export async function POST(request: NextRequest) {
   console.log('POST /api/projects - Starting request')
   
   try {
-    const { organizationId, user } = await getOrganizationWithUser()
-    console.log('POST /api/projects - Organization ID:', organizationId)
+    const user = await getCurrentUser()
+    console.log('POST /api/projects - User:', user?.userId)
 
     const body = await request.json()
     console.log('POST /api/projects - Request body:', body)
@@ -75,7 +72,6 @@ export async function POST(request: NextRequest) {
         ...validatedData,
         startDate: validatedData.startDate ? new Date(validatedData.startDate) : null,
         deadline: validatedData.deadline ? new Date(validatedData.deadline) : null,
-        organizationId,
       },
       include: {
         client: true,

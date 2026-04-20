@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getOrganization, getOrganizationWithUser } from '@/lib/getOrganization'
+import { getCurrentUser } from '@/lib/server-auth'
 import { dealSchema } from '@/lib/validations'
 
 export async function GET(request: NextRequest) {
   console.log('GET /api/deals - Starting request')
   
   try {
-    const organizationId = await getOrganization()
-    console.log('GET /api/deals - Organization ID:', organizationId)
-
     const { searchParams } = new URL(request.url)
     const stage = searchParams.get('stage')
     const clientId = searchParams.get('clientId')
 
-    const where: any = { organizationId }
+    const where: any = {}
     
     if (stage) where.stage = stage
     if (clientId) where.clientId = clientId
@@ -51,8 +48,8 @@ export async function POST(request: NextRequest) {
   console.log('POST /api/deals - Starting request')
   
   try {
-    const { organizationId, user } = await getOrganizationWithUser()
-    console.log('POST /api/deals - Organization ID:', organizationId)
+    const user = await getCurrentUser()
+    console.log('POST /api/deals - User:', user?.userId)
 
     const body = await request.json()
     console.log('POST /api/deals - Request body:', body)
@@ -64,7 +61,6 @@ export async function POST(request: NextRequest) {
       data: {
         ...validatedData,
         expectedCloseDate: validatedData.expectedCloseDate ? new Date(validatedData.expectedCloseDate) : null,
-        organizationId,
       },
       include: {
         client: true,

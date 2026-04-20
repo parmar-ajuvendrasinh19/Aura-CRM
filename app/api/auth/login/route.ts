@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
     // Find user
     const user = await prisma.user.findUnique({
       where: { email: validatedData.email },
-      include: { organization: true },
     })
 
     if (!user) {
@@ -42,7 +41,6 @@ export async function POST(request: NextRequest) {
     // Generate tokens
     const tokenPayload = {
       userId: user.id,
-      organizationId: user.organizationId,
       email: user.email,
       role: user.role,
     }
@@ -77,11 +75,6 @@ export async function POST(request: NextRequest) {
         email: user.email,
         name: user.name,
         role: user.role,
-      },
-      organization: {
-        id: user.organization.id,
-        name: user.organization.name,
-        email: user.organization.email,
       },
     })
   } catch (error: any) {

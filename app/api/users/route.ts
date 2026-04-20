@@ -18,7 +18,6 @@ export async function GET(request: NextRequest) {
     }
 
     const users = await prisma.user.findMany({
-      where: { organizationId: user.organizationId },
       select: {
         id: true,
         email: true,
@@ -85,7 +84,6 @@ export async function POST(request: NextRequest) {
         email: validatedData.email,
         name: validatedData.name,
         password: hashedPassword,
-        organizationId: user.organizationId,
       },
       select: {
         id: true,

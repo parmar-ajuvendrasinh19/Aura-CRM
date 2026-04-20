@@ -22,16 +22,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if organization exists, if not create default one
-    let organization = await prisma.organization.findFirst()
-    
-    if (!organization) {
-      organization = await prisma.organization.create({
-        data: {
-          name: "Default Organization",
-        },
-      })
-    }
 
     // Check if any admin exists in the system
     const adminExists = await prisma.user.findFirst({
@@ -50,14 +40,12 @@ export async function POST(request: NextRequest) {
         name: validatedData.name,
         phone: validatedData.phone,
         role: userRole,
-        organizationId: organization.id,
       },
     })
 
     // Generate tokens
     const tokenPayload = {
       userId: user.id,
-      organizationId: organization.id,
       email: user.email,
       role: user.role,
     }
@@ -93,10 +81,6 @@ export async function POST(request: NextRequest) {
         email: user.email,
         name: user.name,
         role: user.role,
-      },
-      organization: {
-        id: organization.id,
-        name: organization.name,
       },
     })
   } catch (error: any) {

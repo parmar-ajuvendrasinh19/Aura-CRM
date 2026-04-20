@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getOrganization, getOrganizationWithUser } from '@/lib/getOrganization'
+import { getCurrentUser } from '@/lib/server-auth'
 import { clientSchema } from '@/lib/validations'
 
 export async function GET(request: NextRequest) {
   console.log('GET /api/clients - Starting request')
   
   try {
-    const organizationId = await getOrganization()
-    console.log('GET /api/clients - Organization ID:', organizationId)
-
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
 
-    const where: any = { organizationId }
+    const where: any = {}
     
     if (search) {
       where.OR = [
@@ -63,8 +60,8 @@ export async function POST(request: NextRequest) {
   console.log('POST /api/clients - Starting request')
   
   try {
-    const { organizationId, user } = await getOrganizationWithUser()
-    console.log('POST /api/clients - Organization ID:', organizationId)
+    const user = await getCurrentUser()
+    console.log('POST /api/clients - User:', user?.userId)
 
     const body = await request.json()
     console.log('POST /api/clients - Request body:', body)
@@ -73,10 +70,7 @@ export async function POST(request: NextRequest) {
     console.log('POST /api/clients - Validated data:', validatedData)
 
     const client = await prisma.client.create({
-      data: {
-        ...validatedData,
-        organizationId,
-      },
+      data: validatedData,
     })
 
     // Log activity

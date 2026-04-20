@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { User, Mail, Building2, Shield, AlertTriangle, Camera, Save, Key, LogOut } from 'lucide-react'
+import { User, Mail, Shield, AlertTriangle, Camera, Save, Key, LogOut } from 'lucide-react'
 
-type TabType = 'profile' | 'account' | 'organization' | 'security' | 'danger'
+type TabType = 'profile' | 'account' | 'security' | 'danger'
 
 export default function SettingsPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
-  const [organization, setOrganization] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>('profile')
   const [isDeleting, setIsDeleting] = useState(false)
@@ -20,9 +19,6 @@ export default function SettingsPage() {
   const [profileForm, setProfileForm] = useState({ name: '', phone: '' })
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   
-  // Organization form state
-  const [orgForm, setOrgForm] = useState({ name: '' })
-  const [isSavingOrg, setIsSavingOrg] = useState(false)
   
   // Password change state
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '' })
@@ -41,9 +37,7 @@ export default function SettingsPage() {
       if (response.ok) {
         const data = await response.json()
         setUser(data.user)
-        setOrganization(data.organization)
         setProfileForm({ name: data.user?.name || '', phone: data.user?.phone || '' })
-        setOrgForm({ name: data.organization?.name || '' })
       }
     } catch (error) {
       console.error('Failed to fetch user data:', error)
@@ -75,28 +69,6 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleSaveOrganization() {
-    setIsSavingOrg(true)
-    try {
-      const response = await fetch('/api/organization/update', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orgForm)
-      })
-      
-      if (response.ok) {
-        setOrganization({ ...organization, ...orgForm })
-        alert('Organization updated successfully')
-      } else {
-        alert('Failed to update organization')
-      }
-    } catch (error) {
-      console.error('Failed to update organization:', error)
-      alert('An error occurred while updating organization')
-    } finally {
-      setIsSavingOrg(false)
-    }
-  }
 
   async function handleChangePassword() {
     setIsChangingPassword(true)
@@ -168,7 +140,6 @@ export default function SettingsPage() {
   const tabs = [
     { id: 'profile' as TabType, label: 'Profile', icon: User },
     { id: 'account' as TabType, label: 'Account', icon: Mail },
-    { id: 'organization' as TabType, label: 'Organization', icon: Building2 },
     { id: 'security' as TabType, label: 'Security', icon: Shield },
     { id: 'danger' as TabType, label: 'Danger Zone', icon: AlertTriangle },
   ]
@@ -189,7 +160,7 @@ export default function SettingsPage() {
     <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-        <p className="mt-2 text-gray-600">Manage your account and organization settings</p>
+        <p className="mt-2 text-gray-600">Manage your account settings</p>
       </div>
 
       {/* Tab Navigation */}
@@ -308,53 +279,6 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Organization Tab */}
-        {activeTab === 'organization' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Organization Settings</h2>
-            
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Organization Name</label>
-                {isAdmin ? (
-                  <input
-                    type="text"
-                    value={orgForm.name}
-                    onChange={(e) => setOrgForm({ name: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-all"
-                    placeholder="Enter organization name"
-                  />
-                ) : (
-                  <div className="flex items-center space-x-3">
-                    <Building2 className="w-5 h-5 text-gray-400" />
-                    <span className="text-gray-900">{organization?.name || '-'}</span>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Users Count</label>
-                <div className="flex items-center space-x-3">
-                  <User className="w-5 h-5 text-gray-400" />
-                  <span className="text-gray-900">{organization?._count?.users || 0} members</span>
-                </div>
-              </div>
-
-              {isAdmin && (
-                <div className="flex justify-end pt-4">
-                  <button
-                    onClick={handleSaveOrganization}
-                    disabled={isSavingOrg}
-                    className="flex items-center space-x-2 px-6 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>{isSavingOrg ? 'Saving...' : 'Save Changes'}</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Security Tab */}
         {activeTab === 'security' && (

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const dealId = searchParams.get('dealId')
     const limit = parseInt(searchParams.get('limit') || '50')
 
-    const where: any = { organizationId: user.organizationId }
+    const where: any = {}
     
     if (clientId) where.clientId = clientId
     if (projectId) where.projectId = projectId
@@ -63,7 +63,6 @@ export async function POST(request: NextRequest) {
       data: {
         ...validatedData,
         date: validatedData.date ? new Date(validatedData.date) : new Date(),
-        organizationId: user.organizationId,
         userId: user.userId,
       },
       include: {
