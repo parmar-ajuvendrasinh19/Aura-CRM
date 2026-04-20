@@ -3,6 +3,61 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/server-auth'
 
 /**
+ * GET /api/admin/users/[id]
+ * 
+ * Fetches a user's details with activity logs.
+ * Only accessible by ADMIN users.
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const currentUser = await getCurrentUser()
+    
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Only admins can access user details
+    if (currentUser.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: params.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        // @ts-ignore - Prisma client needs regeneration after phone field migration
+        phone: true,
+        role: true,
+        avatar: true,
+        isActive: true,
+        createdAt: true,
+        // @ts-ignore - Prisma client needs regeneration after ActivityLog migration
+        activityLogs: {
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    return NextResponse.json(user)
+  } catch (error: any) {
+    console.error('Get user details error:', error)
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
  * DELETE /api/admin/users/[id]
  * 
  * Deletes a user and handles related records securely.

@@ -76,23 +76,23 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Sign In</h1>
-            <p className="mt-2 text-gray-600">
-              Welcome back to Aura CRM
+        <div className="card p-8">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Sign In</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Welcome back to WebAura CRM
             </p>
           </div>
 
           {error && (
-            <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
               {error}
             </div>
           )}
 
-          <form className="space-y-5" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <Input
               id="email"
               label="Email"
@@ -119,7 +119,7 @@ export default function LoginPage() {
               <div className="mt-2 flex justify-end">
                 <Link
                   href="/forgot-password"
-                  className="text-sm font-medium text-red-600 hover:text-red-500"
+                  className="text-sm font-medium text-primary hover:text-primary/80"
                 >
                   Forgot Password?
                 </Link>
@@ -129,7 +129,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={!isFormValid() || isLoading}
-              className="w-full flex items-center justify-center rounded-lg bg-red-600 px-4 py-3.5 text-base font-semibold text-white shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="btn-primary w-full"
             >
               {isLoading ? (
                 <>
@@ -141,9 +141,9 @@ export default function LoginPage() {
               )}
             </button>
 
-            <p className="text-center text-sm text-gray-600">
+            <p className="text-center text-sm text-gray-500">
               Don't have an account?{' '}
-              <Link href="/signup" className="font-semibold text-red-600 hover:text-red-500">
+              <Link href="/signup" className="font-semibold text-primary hover:text-primary/80">
                 Sign up
               </Link>
             </p>

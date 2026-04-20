@@ -59,38 +59,18 @@ enum ActivityType {
   STATUS_CHANGE
 }
 
-model Organization {
-  id          String   @id @default(cuid())
-  name        String
-  email       String   @unique
-  phone       String?
-  address     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  users       User[]
-  clients     Client[]
-  projects    Project[]
-  deals       Deal[]
-  activities  Activity[]
-  payments    Payment[]
-
-  @@index([email])
-}
-
 model User {
   id             String         @id @default(cuid())
   email          String         @unique
   password       String
   name           String
+  phone          String?
   role           UserRole       @default(USER)
   avatar         String?
   isActive       Boolean        @default(true)
-  organizationId String
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   refreshTokens  RefreshToken[]
   assignedTasks  Task[]         @relation("TaskAssignee")
   createdTasks   Task[]         @relation("TaskCreator")
@@ -98,7 +78,6 @@ model User {
   activityLogs   ActivityLog[]
 
   @@index([email])
-  @@index([organizationId])
 }
 
 model RefreshToken {
@@ -122,17 +101,13 @@ model Client {
   phone          String?
   address        String?
   notes          String?
-  organizationId String
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   projects       Project[]
   deals          Deal[]
   activities     Activity[]
   payments       Payment[]
-
-  @@index([organizationId])
 }
 
 model Project {
@@ -147,20 +122,17 @@ model Project {
   value          Float?
   isRecurring    Boolean       @default(false)
   recurringMonth  Int?          // Day of month for recurring tasks (1-31)
-  organizationId String
   clientId       String?
   dealId         String?       @unique
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   client         Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
   deal           Deal?         @relation(fields: [dealId], references: [id], onDelete: SetNull)
   tasks          Task[]
   activities     Activity[]
   payments       Payment[]
 
-  @@index([organizationId])
   @@index([clientId])
   @@index([dealId])
 }
@@ -195,18 +167,15 @@ model Deal {
   value          Float?
   probability    Int?         // 0-100
   expectedCloseDate DateTime?
-  organizationId String
   clientId       String?
   projectId      String?      @unique
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   client         Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
   project        Project?      @relation
   activities     Activity[]
 
-  @@index([organizationId])
   @@index([clientId])
   @@index([stage])
 }
@@ -217,7 +186,6 @@ model Activity {
   title          String
   description    String?
   date           DateTime      @default(now())
-  organizationId String
   userId         String?
   clientId       String?
   projectId      String?
@@ -225,14 +193,12 @@ model Activity {
   dealId         String?
   createdAt      DateTime      @default(now())
 
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   client         Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
   project        Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
   task           Task?         @relation(fields: [taskId], references: [id], onDelete: SetNull)
   deal           Deal?         @relation(fields: [dealId], references: [id], onDelete: SetNull)
 
-  @@index([organizationId])
   @@index([userId])
   @@index([clientId])
   @@index([projectId])
@@ -249,17 +215,14 @@ model Payment {
   paidDate       DateTime?
   description    String?
   invoiceNumber  String?
-  organizationId String
   clientId       String?
   projectId      String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   client         Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
   project        Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
-  @@index([organizationId])
   @@index([clientId])
   @@index([projectId])
   @@index([status])

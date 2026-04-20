@@ -84,7 +84,6 @@ export async function POST(request: NextRequest) {
       data: {
         email: validatedData.email,
         name: validatedData.name,
-        role: validatedData.role,
         password: hashedPassword,
         organizationId: user.organizationId,
       },

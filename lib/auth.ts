@@ -8,7 +8,6 @@ const JWT_REFRESH_SECRET = (process.env.JWT_REFRESH_SECRET || 'refresh-secret') 
 
 export interface TokenPayload {
   userId: string
-  organizationId: string
   email: string
   role: string
 }

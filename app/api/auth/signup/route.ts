@@ -7,6 +7,7 @@ import { signupSchema } from '@/lib/validations'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log("Phone:", body.phone)
     const validatedData = signupSchema.parse(body)
 
     // Check if user already exists
@@ -21,25 +22,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if organization already exists
-    const existingOrg = await prisma.organization.findUnique({
-      where: { email: validatedData.organizationEmail },
-    })
-
-    if (existingOrg) {
-      return NextResponse.json(
-        { error: 'Organization with this email already exists' },
-        { status: 400 }
-      )
+    // Check if organization exists, if not create default one
+    let organization = await prisma.organization.findFirst()
+    
+    if (!organization) {
+      organization = await prisma.organization.create({
+        data: {
+          name: "Default Organization",
+        },
+      })
     }
-
-    // Create organization
-    const organization = await prisma.organization.create({
-      data: {
-        name: validatedData.organizationName,
-        email: validatedData.organizationEmail,
-      },
-    })
 
     // Check if any admin exists in the system
     const adminExists = await prisma.user.findFirst({
@@ -56,6 +48,7 @@ export async function POST(request: NextRequest) {
         email: validatedData.email,
         password: hashedPassword,
         name: validatedData.name,
+        phone: validatedData.phone,
         role: userRole,
         organizationId: organization.id,
       },
@@ -84,6 +77,16 @@ export async function POST(request: NextRequest) {
     // Set cookies
     setAuthCookies(accessToken, refreshToken)
 
+    // Log account creation activity
+    // @ts-ignore - Prisma client needs regeneration after ActivityLog migration
+    await prisma.activityLog.create({
+      data: {
+        userId: user.id,
+        action: "ACCOUNT_CREATED",
+        description: "User created account",
+      }
+    })
+
     return NextResponse.json({
       user: {
         id: user.id,
@@ -94,7 +97,6 @@ export async function POST(request: NextRequest) {
       organization: {
         id: organization.id,
         name: organization.name,
-        email: organization.email,
       },
     })
   } catch (error: any) {

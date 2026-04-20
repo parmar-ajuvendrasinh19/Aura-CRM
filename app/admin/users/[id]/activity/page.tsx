@@ -14,41 +14,43 @@ interface ActivityLog {
   createdAt: string
 }
 
+interface UserDetails {
+  id: string
+  name: string
+  email: string
+  phone: string | null
+  role: string
+  avatar: string | null
+  isActive: boolean
+  createdAt: string
+  activityLogs: ActivityLog[]
+}
+
 export default function UserActivityPage() {
   const params = useParams()
   const router = useRouter()
   const userId = params.id as string
 
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
+  const [userDetails, setUserDetails] = useState<UserDetails | null>(null)
   const [loading, setLoading] = useState(true)
-  const [actionFilter, setActionFilter] = useState('')
-  const [entityTypeFilter, setEntityTypeFilter] = useState('')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
 
   useEffect(() => {
-    fetchActivityLogs()
-  }, [actionFilter, entityTypeFilter, startDate, endDate])
+    fetchUserDetails()
+  }, [])
 
-  const fetchActivityLogs = async () => {
+  const fetchUserDetails = async () => {
     try {
       setLoading(true)
-      const params = new URLSearchParams()
-      if (actionFilter) params.append('action', actionFilter)
-      if (entityTypeFilter) params.append('entityType', entityTypeFilter)
-      if (startDate) params.append('startDate', startDate)
-      if (endDate) params.append('endDate', endDate)
-
-      const response = await fetch(`/api/admin/users/${userId}/activity?${params.toString()}`)
+      const response = await fetch(`/api/admin/users/${userId}`)
       
       if (!response.ok) {
-        throw new Error('Failed to fetch activity logs')
+        throw new Error('Failed to fetch user details')
       }
 
       const data = await response.json()
-      setActivityLogs(data)
+      setUserDetails(data)
     } catch (error: any) {
-      console.error('Error fetching activity logs:', error)
+      console.error('Error fetching user details:', error)
     } finally {
       setLoading(false)
     }
@@ -93,81 +95,40 @@ export default function UserActivityPage() {
         <p className="mt-2 text-gray-600">View all actions performed by this user</p>
       </div>
 
-      {/* Filters */}
-      <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow">
-        <div className="mb-4 flex items-center gap-2">
-          <Filter className="h-5 w-5 text-gray-400" />
-          <h3 className="font-medium text-gray-900">Filters</h3>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Action Type</label>
-            <select
-              value={actionFilter}
-              onChange={(e) => setActionFilter(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="">All Actions</option>
-              <option value="LOGIN">Login</option>
-              <option value="CREATE_CLIENT">Create Client</option>
-              <option value="UPDATE_CLIENT">Update Client</option>
-              <option value="DELETE_CLIENT">Delete Client</option>
-              <option value="CREATE_PROJECT">Create Project</option>
-              <option value="UPDATE_PROJECT">Update Project</option>
-              <option value="DELETE_PROJECT">Delete Project</option>
-              <option value="CREATE_TASK">Create Task</option>
-              <option value="UPDATE_TASK">Update Task</option>
-              <option value="DELETE_TASK">Delete Task</option>
-              <option value="CREATE_DEAL">Create Deal</option>
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Entity Type</label>
-            <select
-              value={entityTypeFilter}
-              onChange={(e) => setEntityTypeFilter(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="">All Entities</option>
-              <option value="CLIENT">Client</option>
-              <option value="PROJECT">Project</option>
-              <option value="TASK">Task</option>
-              <option value="DEAL">Deal</option>
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Start Date</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">End Date</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            />
+      {/* User Details Card */}
+      {!loading && userDetails && (
+        <div className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow">
+          <h3 className="mb-4 text-lg font-semibold text-gray-900">User Details</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="text-sm text-gray-500">Name</p>
+              <p className="font-medium text-gray-900">{userDetails.name}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Email</p>
+              <p className="font-medium text-gray-900">{userDetails.email}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Phone</p>
+              <p className="font-medium text-gray-900">{userDetails.phone || 'N/A'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Role</p>
+              <p className="font-medium text-gray-900">{userDetails.role}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Account Created</p>
+              <p className="font-medium text-gray-900">{formatIST(userDetails.createdAt)} (IST)</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Status</p>
+              <p className="font-medium text-gray-900">
+                {userDetails.isActive ? 'Active' : 'Inactive'}
+              </p>
+            </div>
           </div>
         </div>
-        {(actionFilter || entityTypeFilter || startDate || endDate) && (
-          <button
-            onClick={() => {
-              setActionFilter('')
-              setEntityTypeFilter('')
-              setStartDate('')
-              setEndDate('')
-            }}
-            className="mt-4 text-sm text-blue-600 hover:text-blue-800"
-          >
-            Clear all filters
-          </button>
-        )}
-      </div>
+      )}
 
       {/* Activity Timeline */}
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
@@ -175,14 +136,14 @@ export default function UserActivityPage() {
           <div className="p-12 text-center text-gray-500">
             Loading activity logs...
           </div>
-        ) : activityLogs.length === 0 ? (
+        ) : !userDetails || userDetails.activityLogs.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
             <Activity className="mx-auto h-12 w-12 text-gray-300" />
             <p className="mt-2">No activity logs found</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {activityLogs.map((log, index) => (
+            {userDetails.activityLogs.map((log: ActivityLog) => (
               <div key={log.id} className="p-6 hover:bg-gray-50">
                 <div className="flex items-start gap-4">
                   <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-100">
@@ -216,10 +177,10 @@ export default function UserActivityPage() {
       </div>
 
       {/* Summary */}
-      {!loading && activityLogs.length > 0 && (
+      {!loading && userDetails && userDetails.activityLogs.length > 0 && (
         <div className="mt-4 rounded-lg border border-gray-200 bg-white p-4 shadow">
           <p className="text-sm text-gray-600">
-            Showing <span className="font-semibold text-gray-900">{activityLogs.length}</span> activity logs
+            Showing <span className="font-semibold text-gray-900">{userDetails.activityLogs.length}</span> activity logs
           </p>
         </div>
       )}

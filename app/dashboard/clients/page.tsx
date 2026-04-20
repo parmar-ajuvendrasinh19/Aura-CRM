@@ -58,14 +58,14 @@ export default function ClientsPage() {
   )
 
   return (
-    <div className="p-8">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="p-6">
+      <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-          <p className="mt-2 text-gray-600">Manage your client relationships</p>
+          <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
+          <p className="mt-1 text-sm text-gray-500">Manage your client relationships</p>
         </div>
         {successMessage && (
-          <div className="rounded-lg bg-green-50 px-4 py-2 text-sm font-medium text-green-800">
+          <div className="rounded-lg bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800">
             {successMessage}
           </div>
         )}
@@ -79,7 +79,7 @@ export default function ClientsPage() {
             console.log('Add Client button clicked')
             setShowModal(true)
           }}
-          className="flex cursor-pointer items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+          className="btn-primary flex cursor-pointer items-center"
         >
           <Plus className="mr-2 h-4 w-4" />
           Add Client
@@ -89,13 +89,13 @@ export default function ClientsPage() {
       {/* Search */}
       <div className="mb-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             placeholder="Search clients..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 pl-10 pr-4 py-2 text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+            className="input-field pl-10"
           />
         </div>
       </div>
@@ -104,13 +104,13 @@ export default function ClientsPage() {
       {isLoading ? (
         <div className="text-center py-12">Loading...</div>
       ) : filteredClients.length === 0 ? (
-        <div className="rounded-lg bg-white p-12 text-center shadow-sm">
+        <div className="card p-12 text-center">
           <p className="text-gray-500">
             {searchQuery ? 'No clients found matching your search.' : 'No clients yet. Add your first client to get started.'}
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg bg-white shadow-sm">
+        <div className="overflow-hidden rounded-xl bg-white shadow-soft border border-gray-100">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -169,10 +169,10 @@ export default function ClientsPage() {
           }}
         >
           <div
-            className="w-full max-w-md rounded-lg bg-white p-6"
+            className="w-full max-w-md card p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="mb-4 text-xl font-bold text-gray-900">Add New Client</h2>
+            <h2 className="mb-4 text-lg font-bold text-gray-900">Add New Client</h2>
             <form
               onSubmit={async (e) => {
                 e.preventDefault()
@@ -223,7 +223,7 @@ export default function ClientsPage() {
                   name="name"
                   type="text"
                   required
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+                  className="input-field"
                 />
               </div>
               <div>
@@ -231,7 +231,7 @@ export default function ClientsPage() {
                 <input
                   name="company"
                   type="text"
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+                  className="input-field"
                 />
               </div>
               <div>
@@ -239,7 +239,7 @@ export default function ClientsPage() {
                 <input
                   name="email"
                   type="email"
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+                  className="input-field"
                 />
               </div>
               <div>
@@ -247,7 +247,7 @@ export default function ClientsPage() {
                 <input
                   name="phone"
                   type="text"
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+                  className="input-field"
                 />
               </div>
               <div>
@@ -255,7 +255,7 @@ export default function ClientsPage() {
                 <textarea
                   name="notes"
                   rows={3}
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+                  className="input-field"
                 />
               </div>
               <div className="flex justify-end space-x-3">
@@ -265,13 +265,13 @@ export default function ClientsPage() {
                     console.log('Cancel button clicked')
                     setShowModal(false)
                   }}
-                  className="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                  className="btn-secondary cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="cursor-pointer rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                  className="btn-primary cursor-pointer"
                 >
                   Add Client
                 </button>

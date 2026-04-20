@@ -9,6 +9,7 @@ interface PasswordInputProps {
   error?: string
   value?: string
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onBlur?: () => void
   name?: string
   id?: string
   required?: boolean
@@ -21,6 +22,7 @@ export default function PasswordInput({
   error,
   value,
   onChange,
+  onBlur,
   name,
   id,
   required,
@@ -43,6 +45,7 @@ export default function PasswordInput({
           type={showPassword ? 'text' : 'password'}
           value={value}
           onChange={onChange}
+          onBlur={onBlur}
           required={required}
           autoComplete={autoComplete}
           placeholder={placeholder}
