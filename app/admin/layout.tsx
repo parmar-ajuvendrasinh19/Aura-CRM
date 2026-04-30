@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { 
   Users, 
+  CheckSquare,
   LogOut,
   Shield
 } from 'lucide-react'
@@ -12,6 +13,7 @@ import { cn } from '@/lib/utils'
 
 const adminNavigation = [
   { name: 'Users', href: '/admin/users', icon: Users },
+  { name: 'Tasks', href: '/admin/tasks', icon: CheckSquare },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

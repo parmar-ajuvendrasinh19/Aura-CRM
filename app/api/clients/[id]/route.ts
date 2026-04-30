@@ -17,7 +17,6 @@ export async function GET(
     const client = await prisma.client.findFirst({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
       },
       include: {
         projects: {
@@ -49,13 +48,13 @@ export async function GET(
   }
 }
 
-export async function PATCH(
+export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const user = await getCurrentUser()
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -66,7 +65,6 @@ export async function PATCH(
     const client = await prisma.client.updateMany({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
       },
       data: validatedData,
     })
@@ -86,7 +84,7 @@ export async function PATCH(
         action: "UPDATE_CLIENT",
         entityType: "CLIENT",
         entityId: params.id,
-        description: `Updated client: ${updatedClient?.name}`
+        description: `Updated client: ${updatedClient?.companyName}`
       }
     })
 
@@ -119,7 +117,6 @@ export async function DELETE(
     const client = await prisma.client.deleteMany({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
       },
     })
 
@@ -134,7 +131,7 @@ export async function DELETE(
         action: "DELETE_CLIENT",
         entityType: "CLIENT",
         entityId: params.id,
-        description: `Deleted client: ${clientToDelete?.name}`
+        description: `Deleted client: ${clientToDelete?.companyName}`
       }
     })
 

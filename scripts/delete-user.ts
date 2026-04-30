@@ -33,7 +33,6 @@ async function deleteUser() {
     console.log(`   ID: ${user.id}`)
     console.log(`   Name: ${user.name}`)
     console.log(`   Email: ${user.email}`)
-    console.log(`   Organization: ${user.organizationId}`)
     console.log(`\n📊 Related records:`)
     console.log(`   Refresh Tokens: ${user._count.refreshTokens}`)
     console.log(`   Assigned Tasks: ${user._count.assignedTasks}`)

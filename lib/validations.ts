@@ -19,10 +19,11 @@ export const userSchema = z.object({
 })
 
 export const clientSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  company: z.string().optional(),
+  companyName: z.string().min(2, 'Company name must be at least 2 characters'),
+  ownerName: z.string().min(2, 'Owner name must be at least 2 characters'),
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
-  phone: z.string().optional(),
+  phone: z.string().regex(/^\d{10}$/, 'Phone must be exactly 10 digits'),
+  services: z.array(z.string()).min(1, 'At least one service must be selected'),
   address: z.string().optional(),
   notes: z.string().optional(),
 })
@@ -44,10 +45,13 @@ export const projectSchema = z.object({
 export const taskSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters'),
   description: z.string().optional(),
-  status: z.enum(['TODO', 'IN_PROGRESS', 'REVIEW', 'COMPLETED']).default('TODO'),
+  type: z.enum(['MEETING', 'FOLLOW_UP', 'PAYMENT', 'CAMPAIGN', 'CONTENT', 'DEVELOPMENT', 'INTERNAL', 'ALERT']).default('INTERNAL'),
+  priority: z.enum(['HIGH', 'MEDIUM', 'LOW']).default('MEDIUM'),
+  status: z.enum(['PENDING', 'COMPLETED']).default('PENDING'),
   dueDate: z.string().optional(),
-  projectId: z.string().min(1, 'Project is required'),
-  assigneeId: z.string().min(1, 'Assignee is required'),
+  assignedTo: z.string().min(1, 'Assignee is required'),
+  clientId: z.string().optional(),
+  projectId: z.string().optional(),
 })
 
 export const dealSchema = z.object({

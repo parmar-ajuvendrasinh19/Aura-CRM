@@ -9,13 +9,22 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
+    const archived = searchParams.get('archived')
 
     const where: any = {}
-    
+
+    if (archived === 'true') {
+      where.isArchived = true
+    } else if (archived === 'false') {
+      where.isArchived = false
+    } else {
+      where.isArchived = false
+    }
+
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { company: { contains: search, mode: 'insensitive' } },
+        { ownerName: { contains: search, mode: 'insensitive' } },
+        { companyName: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
       ]
     }
@@ -29,7 +38,6 @@ export async function GET(request: NextRequest) {
         _count: {
           select: {
             projects: true,
-            deals: true,
           },
         },
       },
@@ -40,15 +48,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(clients)
   } catch (error: any) {
     console.error('GET /api/clients - Error:', error)
-    
-    // Handle specific error cases
-    if (error.message.includes('No organization found')) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      )
-    }
-    
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
@@ -80,7 +79,7 @@ export async function POST(request: NextRequest) {
         action: "CREATE_CLIENT",
         entityType: "CLIENT",
         entityId: client.id,
-        description: `Created new client: ${client.name}`
+        description: `Created new client: ${client.companyName}`
       }
     })
 
@@ -88,15 +87,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(client, { status: 201 })
   } catch (error: any) {
     console.error('POST /api/clients - Error:', error)
-    
-    // Handle specific error cases
-    if (error.message.includes('No organization found')) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      )
-    }
-    
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }

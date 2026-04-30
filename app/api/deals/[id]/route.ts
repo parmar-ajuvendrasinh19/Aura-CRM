@@ -21,7 +21,6 @@ export async function PATCH(
     const currentDeal = await prisma.deal.findFirst({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
       },
     })
 
@@ -36,7 +35,6 @@ export async function PATCH(
           name: currentDeal.title,
           description: currentDeal.description,
           value: currentDeal.value,
-          organizationId: user.organizationId,
           clientId: currentDeal.clientId,
           dealId: currentDeal.id,
           status: 'ACTIVE',
@@ -55,7 +53,6 @@ export async function PATCH(
         data: {
           type: 'STATUS_CHANGE',
           title: `Deal won and converted to project: ${currentDeal.title}`,
-          organizationId: user.organizationId,
           userId: user.userId,
           dealId: params.id,
           projectId: project.id,
@@ -66,7 +63,6 @@ export async function PATCH(
     const deal = await prisma.deal.updateMany({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
       },
       data: {
         ...validatedData,
@@ -110,7 +106,6 @@ export async function DELETE(
     const deal = await prisma.deal.deleteMany({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
       },
     })
 

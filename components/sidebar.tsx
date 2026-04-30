@@ -6,11 +6,9 @@ import { usePathname, useRouter } from 'next/navigation'
 import { 
   LayoutDashboard, 
   Users, 
-  FolderKanban, 
-  CheckSquare, 
   TrendingUp,
   DollarSign,
-  Settings,
+  CheckSquare,
   LogOut,
   Shield
 } from 'lucide-react'
@@ -19,15 +17,9 @@ import { cn } from '@/lib/utils'
 const userMenu = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Clients', href: '/dashboard/clients', icon: Users },
-  { name: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
+  { name: 'Leads', href: '/dashboard/leads', icon: TrendingUp },
+  { name: 'Deals', href: '/dashboard/deals', icon: DollarSign },
   { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
-  { name: 'Deals', href: '/dashboard/deals', icon: TrendingUp },
-  { name: 'Payments', href: '/dashboard/payments', icon: DollarSign },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
-]
-
-const adminMenu = [
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
 export function Sidebar() {
@@ -81,7 +73,7 @@ export function Sidebar() {
           </Link>
         )}
 
-        {(userRole === 'ADMIN' ? adminMenu : userMenu).map((item) => {
+        {userMenu.map((item) => {
           const isActive = pathname === item.href
           return (
             <Link

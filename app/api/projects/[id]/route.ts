@@ -17,7 +17,6 @@ export async function GET(
     const project = await prisma.project.findFirst({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
       },
       include: {
         client: true,
@@ -67,7 +66,6 @@ export async function PATCH(
     const project = await prisma.project.updateMany({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
       },
       data: {
         ...validatedData,
@@ -125,7 +123,6 @@ export async function DELETE(
     const project = await prisma.project.deleteMany({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
       },
     })
 

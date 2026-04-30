@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import { 
   Plus,
   Calendar,
@@ -11,15 +10,15 @@ import {
   User,
   Building2,
   Filter,
-  Search,
-  MoreVertical,
   Edit2,
   Trash2,
-  X
+  X,
+  ArrowLeft
 } from 'lucide-react'
-import { format, isToday, isPast, isFuture, parseISO } from 'date-fns'
+import { format, parseISO } from 'date-fns'
+import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { Task, TaskType, TaskPriority, TaskStatus } from '@/types/task'
+import { Task, TaskType, TaskPriority } from '@/types/task'
 import { TaskForm } from '@/components/TaskForm'
 
 const typeColors: Record<TaskType, { bg: string; text: string; border: string }> = {
@@ -65,8 +64,7 @@ interface Filters {
   clientId: string
 }
 
-export default function TasksPage() {
-  const router = useRouter()
+export default function AdminTasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -86,11 +84,8 @@ export default function TasksPage() {
     try {
       setLoading(true)
       const queryParams = new URLSearchParams()
-      
-      // Add section filter
       queryParams.set('section', activeSection)
       
-      // Add additional filters
       if (filters.type) queryParams.set('type', filters.type)
       if (filters.priority) queryParams.set('priority', filters.priority)
       if (filters.assignedTo) queryParams.set('assignedTo', filters.assignedTo)
@@ -220,11 +215,11 @@ export default function TasksPage() {
     }
   }
 
-  const sections: { key: SectionType; label: string; icon: any; count: number }[] = [
-    { key: 'today', label: 'Today', icon: Calendar, count: tasks.length },
-    { key: 'upcoming', label: 'Upcoming', icon: Clock, count: 0 },
-    { key: 'overdue', label: 'Overdue', icon: AlertCircle, count: 0 },
-    { key: 'completed', label: 'Completed', icon: CheckCircle2, count: 0 },
+  const sections: { key: SectionType; label: string; icon: any }[] = [
+    { key: 'today', label: 'Today', icon: Calendar },
+    { key: 'upcoming', label: 'Upcoming', icon: Clock },
+    { key: 'overdue', label: 'Overdue', icon: AlertCircle },
+    { key: 'completed', label: 'Completed', icon: CheckCircle2 },
   ]
 
   const renderTaskCard = (task: Task) => {
@@ -253,19 +248,12 @@ export default function TasksPage() {
 
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <h3
-                className={`font-medium text-gray-900 ${
-                  task.status === 'COMPLETED' ? 'line-through text-gray-500' : ''
-                }`}
-              >
+              <h3 className={`font-medium text-gray-900 ${task.status === 'COMPLETED' ? 'line-through text-gray-500' : ''}`}>
                 {task.title}
               </h3>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
-                  onClick={() => {
-                    setEditingTask(task)
-                    setShowForm(true)
-                  }}
+                  onClick={() => { setEditingTask(task); setShowForm(true) }}
                   className="p-1 text-gray-400 hover:text-blue-600 rounded"
                 >
                   <Edit2 className="h-4 w-4" />
@@ -284,34 +272,22 @@ export default function TasksPage() {
             )}
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              {/* Type Badge */}
-              <span
-                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border ${typeStyle.bg} ${typeStyle.text} ${typeStyle.border}`}
-              >
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border ${typeStyle.bg} ${typeStyle.text} ${typeStyle.border}`}>
                 {typeLabels[task.type]}
               </span>
 
-              {/* Priority Badge */}
-              <span
-                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${priorityStyle.bg} ${priorityStyle.text}`}
-              >
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${priorityStyle.bg} ${priorityStyle.text}`}>
                 {priorityLabels[task.priority]}
               </span>
 
-              {/* Due Date */}
               {task.dueDate && (
-                <span
-                  className={`inline-flex items-center gap-1 text-xs ${
-                    isTaskOverdue ? 'text-red-600 font-medium' : 'text-gray-500'
-                  }`}
-                >
+                <span className={`inline-flex items-center gap-1 text-xs ${isTaskOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
                   <Calendar className="h-3 w-3" />
                   {format(parseISO(task.dueDate.toString()), 'MMM d')}
                   {isTaskOverdue && ' (Overdue)'}
                 </span>
               )}
 
-              {/* Assigned User */}
               {task.assignedUser && (
                 <span className="inline-flex items-center gap-1 text-xs text-gray-500">
                   <User className="h-3 w-3" />
@@ -319,7 +295,6 @@ export default function TasksPage() {
                 </span>
               )}
 
-              {/* Client */}
               {task.client && (
                 <span className="inline-flex items-center gap-1 text-xs text-gray-500">
                   <Building2 className="h-3 w-3" />
@@ -334,171 +309,137 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="p-6">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
-              <p className="text-sm text-gray-500 mt-1">Manage your tasks and assignments</p>
-            </div>
-            <button
-              onClick={() => {
-                setEditingTask(null)
-                setShowForm(true)
-              }}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              New Task
-            </button>
+      <div className="mb-6">
+        <Link 
+          href="/admin/users" 
+          className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-4"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Admin
+        </Link>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Task Management</h1>
+            <p className="text-sm text-gray-500 mt-1">Admin view of all tasks</p>
           </div>
-
-          {/* Section Tabs */}
-          <div className="flex gap-1 border-b border-gray-200 mt-2">
-            {sections.map((section) => {
-              const Icon = section.icon
-              return (
-                <button
-                  key={section.key}
-                  onClick={() => setActiveSection(section.key)}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                    activeSection === section.key
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {section.label}
-                </button>
-              )
-            })}
-          </div>
+          <button
+            onClick={() => { setEditingTask(null); setShowForm(true) }}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            New Task
+          </button>
         </div>
       </div>
 
-      {/* Filters Bar */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center gap-4">
+      {/* Section Tabs */}
+      <div className="flex gap-1 border-b border-gray-200 mb-6">
+        {sections.map((section) => {
+          const Icon = section.icon
+          return (
             <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                showFilters ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
+              key={section.key}
+              onClick={() => setActiveSection(section.key)}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeSection === section.key
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              <Filter className="h-4 w-4" />
-              Filters
+              <Icon className="h-4 w-4" />
+              {section.label}
             </button>
-
-            {(filters.type || filters.priority || filters.assignedTo || filters.clientId) && (
-              <button
-                onClick={() => setFilters({ type: '', priority: '', assignedTo: '', clientId: '' })}
-                className="text-sm text-gray-500 hover:text-gray-700"
-              >
-                Clear filters
-              </button>
-            )}
-          </div>
-
-          {/* Filter Options */}
-          {showFilters && (
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pb-3">
-              {/* Type Filter */}
-              <select
-                value={filters.type}
-                onChange={(e) => setFilters({ ...filters, type: e.target.value as TaskType })}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              >
-                <option value="">All Types</option>
-                {Object.entries(typeLabels).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-
-              {/* Priority Filter */}
-              <select
-                value={filters.priority}
-                onChange={(e) => setFilters({ ...filters, priority: e.target.value as TaskPriority })}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              >
-                <option value="">All Priorities</option>
-                {Object.entries(priorityLabels).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-
-              {/* Assigned To Filter */}
-              <select
-                value={filters.assignedTo}
-                onChange={(e) => setFilters({ ...filters, assignedTo: e.target.value })}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              >
-                <option value="">All Users</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name}
-                  </option>
-                ))}
-              </select>
-
-              {/* Client Filter */}
-              <select
-                value={filters.clientId}
-                onChange={(e) => setFilters({ ...filters, clientId: e.target.value })}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              >
-                <option value="">All Clients</option>
-                {clients.map((client) => (
-                  <option key={client.id} value={client.id}>
-                    {client.companyName}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
+          )
+        })}
       </div>
 
-      {/* Task List */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-gray-500">Loading tasks...</div>
-          </div>
-        ) : tasks.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-              <CheckCircle2 className="h-8 w-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900">No tasks found</h3>
-            <p className="text-gray-500 mt-1">
-              {activeSection === 'today'
-                ? "You're all caught up for today!"
-                : `No ${activeSection} tasks found.`}
-            </p>
+      {/* Filters */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium ${
+              showFilters ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Filter className="h-4 w-4" />
+            Filters
+          </button>
+          {(filters.type || filters.priority || filters.assignedTo || filters.clientId) && (
             <button
-              onClick={() => {
-                setEditingTask(null)
-                setShowForm(true)
-              }}
-              className="mt-4 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+              onClick={() => setFilters({ type: '', priority: '', assignedTo: '', clientId: '' })}
+              className="text-sm text-gray-500 hover:text-gray-700"
             >
-              <Plus className="h-4 w-4" />
-              Create a task
+              Clear filters
             </button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {tasks.map(renderTaskCard)}
+          )}
+        </div>
+
+        {showFilters && (
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <select
+              value={filters.type}
+              onChange={(e) => setFilters({ ...filters, type: e.target.value as TaskType })}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            >
+              <option value="">All Types</option>
+              {Object.entries(typeLabels).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+
+            <select
+              value={filters.priority}
+              onChange={(e) => setFilters({ ...filters, priority: e.target.value as TaskPriority })}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            >
+              <option value="">All Priorities</option>
+              {Object.entries(priorityLabels).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+
+            <select
+              value={filters.assignedTo}
+              onChange={(e) => setFilters({ ...filters, assignedTo: e.target.value })}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            >
+              <option value="">All Users</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>{user.name}</option>
+              ))}
+            </select>
+
+            <select
+              value={filters.clientId}
+              onChange={(e) => setFilters({ ...filters, clientId: e.target.value })}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            >
+              <option value="">All Clients</option>
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>{client.companyName}</option>
+              ))}
+            </select>
           </div>
         )}
       </div>
+
+      {/* Task List */}
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Loading tasks...</div>
+      ) : tasks.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+          <CheckCircle2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900">No tasks found</h3>
+          <p className="text-gray-500 mt-1">No {activeSection} tasks available.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {tasks.map(renderTaskCard)}
+        </div>
+      )}
 
       {/* Task Form Modal */}
       {showForm && (
@@ -509,10 +450,7 @@ export default function TasksPage() {
                 {editingTask ? 'Edit Task' : 'Create Task'}
               </h2>
               <button
-                onClick={() => {
-                  setShowForm(false)
-                  setEditingTask(null)
-                }}
+                onClick={() => { setShowForm(false); setEditingTask(null) }}
                 className="p-1 text-gray-400 hover:text-gray-600 rounded"
               >
                 <X className="h-5 w-5" />
@@ -524,10 +462,7 @@ export default function TasksPage() {
                 users={users}
                 clients={clients}
                 onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
-                onCancel={() => {
-                  setShowForm(false)
-                  setEditingTask(null)
-                }}
+                onCancel={() => { setShowForm(false); setEditingTask(null) }}
               />
             </div>
           </div>

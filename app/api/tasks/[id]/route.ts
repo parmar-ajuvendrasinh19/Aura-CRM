@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/server-auth'
 import { taskSchema } from '@/lib/validations'
+import { startOfDay, isBefore } from 'date-fns'
 
 export async function GET(
   request: NextRequest,
@@ -17,12 +18,12 @@ export async function GET(
     const task = await prisma.task.findFirst({
       where: {
         id: params.id,
-        project: { organizationId: user.organizationId },
       },
       include: {
         project: { select: { id: true, name: true } },
-        assignee: { select: { id: true, name: true, email: true } },
+        assignedUser: { select: { id: true, name: true, email: true, avatar: true } },
         creator: { select: { id: true, name: true } },
+        client: { select: { id: true, companyName: true, ownerName: true } },
         activities: {
           include: { user: true },
           orderBy: { date: 'desc' },
@@ -56,17 +57,39 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const validatedData = taskSchema.parse(body)
+    
+    // Build update data from body (partial updates allowed)
+    const updateData: any = {}
+    
+    if (body.title !== undefined) updateData.title = body.title
+    if (body.description !== undefined) updateData.description = body.description
+    if (body.type !== undefined) updateData.type = body.type
+    if (body.priority !== undefined) updateData.priority = body.priority
+    if (body.status !== undefined) updateData.status = body.status
+    if (body.assignedTo !== undefined) updateData.assignedTo = body.assignedTo
+    if (body.clientId !== undefined) updateData.clientId = body.clientId || null
+    if (body.projectId !== undefined) updateData.projectId = body.projectId || null
+    
+    // Handle due date and overdue calculation
+    if (body.dueDate !== undefined) {
+      updateData.dueDate = body.dueDate ? new Date(body.dueDate) : null
+      
+      // Recalculate overdue status
+      if (updateData.dueDate && body.status !== 'COMPLETED') {
+        updateData.isOverdue = isBefore(startOfDay(updateData.dueDate), startOfDay(new Date()))
+      }
+    }
+    
+    // When marking as completed, clear overdue flag
+    if (body.status === 'COMPLETED') {
+      updateData.isOverdue = false
+    }
 
     const task = await prisma.task.updateMany({
       where: {
         id: params.id,
-        project: { organizationId: user.organizationId },
       },
-      data: {
-        ...validatedData,
-        dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : undefined,
-      },
+      data: updateData,
     })
 
     if (task.count === 0) {
@@ -77,8 +100,9 @@ export async function PATCH(
       where: { id: params.id },
       include: {
         project: { select: { id: true, name: true } },
-        assignee: { select: { id: true, name: true, email: true } },
+        assignedUser: { select: { id: true, name: true, email: true, avatar: true } },
         creator: { select: { id: true, name: true } },
+        client: { select: { id: true, companyName: true, ownerName: true } },
       },
     })
 
@@ -119,16 +143,15 @@ export async function DELETE(
       where: { id: params.id },
     })
 
-    const task = await prisma.task.deleteMany({
-      where: {
-        id: params.id,
-        project: { organizationId: user.organizationId },
-      },
-    })
-
-    if (task.count === 0) {
+    if (!taskToDelete) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })
     }
+
+    await prisma.task.delete({
+      where: {
+        id: params.id,
+      },
+    })
 
     // Log activity
     await prisma.activityLog.create({

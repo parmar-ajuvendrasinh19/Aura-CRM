@@ -39,14 +39,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(projects)
   } catch (error: any) {
     console.error('GET /api/projects - Error:', error)
-    
-    if (error.message.includes('No organization found')) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      )
-    }
-    
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
@@ -93,14 +85,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(project, { status: 201 })
   } catch (error: any) {
     console.error('POST /api/projects - Error:', error)
-    
-    if (error.message.includes('No organization found')) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      )
-    }
-    
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }

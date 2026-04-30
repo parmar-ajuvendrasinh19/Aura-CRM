@@ -29,14 +29,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(deals)
   } catch (error: any) {
     console.error('GET /api/deals - Error:', error)
-    
-    if (error.message.includes('No organization found')) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      )
-    }
-    
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
@@ -82,14 +74,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(deal, { status: 201 })
   } catch (error: any) {
     console.error('POST /api/deals - Error:', error)
-    
-    if (error.message.includes('No organization found')) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      )
-    }
-    
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
