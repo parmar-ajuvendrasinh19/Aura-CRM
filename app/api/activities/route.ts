@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         user: { select: { id: true, name: true, email: true } },
-        client: { select: { id: true, name: true } },
+        client: { select: { id: true, companyName: true } },
         project: { select: { id: true, name: true } },
         task: { select: { id: true, title: true } },
         deal: { select: { id: true, title: true } },
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         user: { select: { id: true, name: true, email: true } },
-        client: { select: { id: true, name: true } },
+        client: { select: { id: true, companyName: true } },
         project: { select: { id: true, name: true } },
         task: { select: { id: true, title: true } },
         deal: { select: { id: true, title: true } },
