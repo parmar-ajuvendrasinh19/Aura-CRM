@@ -10,8 +10,8 @@ interface ClientFormProps {
 }
 
 const SERVICE_OPTIONS = [
-  { value: 'WEBSITE', label: 'Website (WebAura)' },
-  { value: 'MARKETING', label: 'Marketing (AuraApex)' },
+  { value: 'WEBSITE', label: 'Website' },
+  { value: 'MARKETING', label: 'Marketing' },
 ]
 
 export default function ClientForm({ onSuccess, onCancel }: ClientFormProps) {

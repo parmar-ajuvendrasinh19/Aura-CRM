@@ -6,8 +6,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import { 
   LayoutDashboard, 
   Users, 
-  TrendingUp,
-  DollarSign,
   LogOut,
   Shield,
   CheckSquare
@@ -18,8 +16,6 @@ const userMenu = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
   { name: 'Clients', href: '/dashboard/clients', icon: Users },
-  { name: 'Leads', href: '/dashboard/leads', icon: TrendingUp },
-  { name: 'Deals', href: '/dashboard/deals', icon: DollarSign },
 ]
 
 export function Sidebar() {

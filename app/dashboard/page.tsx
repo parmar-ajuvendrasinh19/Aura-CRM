@@ -175,18 +175,6 @@ export default function DashboardPage() {
                   <p className="text-sm text-gray-500">Manage client relationships</p>
                 </div>
               </button>
-              <button
-                onClick={() => router.push('/dashboard/deals')}
-                className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
-              >
-                <div className="p-2 bg-purple-50 rounded-lg">
-                  <TrendingUp className="h-5 w-5 text-purple-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">View Deals</p>
-                  <p className="text-sm text-gray-500">Track sales pipeline</p>
-                </div>
-              </button>
             </div>
           </div>
         </div>

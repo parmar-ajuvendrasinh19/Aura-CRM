@@ -22,8 +22,8 @@ interface EditClientFormProps {
 }
 
 const SERVICE_OPTIONS = [
-  { value: 'WEBSITE', label: 'Website (WebAura)' },
-  { value: 'MARKETING', label: 'Marketing (AuraApex)' },
+  { value: 'WEBSITE', label: 'Website' },
+  { value: 'MARKETING', label: 'Marketing' },
 ]
 
 export default function EditClientForm({ client, onSuccess, onCancel }: EditClientFormProps) {

@@ -25,7 +25,6 @@ export async function GET(
             payments: true,
           },
         },
-        deals: true,
         activities: {
           include: { user: true },
           orderBy: { date: 'desc' },

@@ -55,16 +55,6 @@ export const taskSchema = z.object({
   clientId: z.string().optional(),
 })
 
-export const dealSchema = z.object({
-  title: z.string().min(2, 'Title must be at least 2 characters'),
-  description: z.string().optional(),
-  stage: z.enum(['LEAD', 'CONTACTED', 'PROPOSAL_SENT', 'WON', 'LOST']).default('LEAD'),
-  value: z.number().optional(),
-  probability: z.number().min(0).max(100).optional(),
-  expectedCloseDate: z.string().optional(),
-  clientId: z.string().min(1, 'Client is required'),
-})
-
 export const activitySchema = z.object({
   type: z.enum(['CALL', 'MEETING', 'NOTE', 'EMAIL', 'TASK_UPDATE', 'STATUS_CHANGE']),
   title: z.string().min(2, 'Title must be at least 2 characters'),
@@ -73,7 +63,6 @@ export const activitySchema = z.object({
   clientId: z.string().optional(),
   projectId: z.string().optional(),
   taskId: z.string().optional(),
-  dealId: z.string().optional(),
 })
 
 export const paymentSchema = z.object({

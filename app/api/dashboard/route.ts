@@ -19,8 +19,6 @@ export async function GET(request: NextRequest) {
       totalTasks,
       completedTasks,
       overdueTasks,
-      totalDeals,
-      wonDeals,
       totalPayments,
       paidPayments,
     ] = await Promise.all([
@@ -44,8 +42,6 @@ export async function GET(request: NextRequest) {
           dueDate: { lt: new Date() },
         },
       }),
-      prisma.deal.count(),
-      prisma.deal.count({ where: { stage: 'WON' } }),
       prisma.payment.count(),
       prisma.payment.count({ where: { status: 'PAID' } }),
     ])
@@ -69,7 +65,7 @@ export async function GET(request: NextRequest) {
     const recentActivities = await prisma.activity.findMany({
       include: {
         user: { select: { id: true, name: true } },
-        client: { select: { id: true, name: true } },
+        client: { select: { id: true, companyName: true } },
         project: { select: { id: true, name: true } },
       },
       orderBy: { date: 'desc' },
@@ -90,12 +86,6 @@ export async function GET(request: NextRequest) {
       take: 10,
     })
 
-    // Get deals by stage
-    const dealsByStage = await prisma.deal.groupBy({
-      by: ['stage'],
-      _count: true,
-    })
-
     return NextResponse.json({
       stats: {
         totalClients,
@@ -105,8 +95,6 @@ export async function GET(request: NextRequest) {
         totalTasks,
         completedTasks,
         overdueTasks,
-        totalDeals,
-        wonDeals,
         totalPayments,
         paidPayments,
         totalRevenue,
@@ -115,7 +103,6 @@ export async function GET(request: NextRequest) {
       },
       recentActivities,
       upcomingTasks,
-      dealsByStage,
     })
   } catch (error: any) {
     console.error('Get dashboard error:', error)
