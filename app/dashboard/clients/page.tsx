@@ -136,7 +136,7 @@ export default function ClientsPage() {
 
   return (
     <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
           <p className="mt-1 text-sm text-gray-500">Manage your client relationships</p>
@@ -167,7 +167,7 @@ export default function ClientsPage() {
           {!showArchived && (
             <button
               onClick={() => setShowForm(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 active:scale-[0.95]"
             >
               <Plus className="w-4 h-4" />
               Add Client
@@ -187,7 +187,7 @@ export default function ClientsPage() {
             onCancel={() => setShowForm(false)}
           />
         </div>
-      ) : (
+          ) : (
         <div className="rounded-xl bg-white shadow-soft border border-gray-100">
           {loading ? (
             <div className="p-5">
@@ -202,19 +202,27 @@ export default function ClientsPage() {
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100">
-              {clients.map((client) => (
-                <div key={client.id} className="p-5 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => window.location.href = `/dashboard/clients/${client.id}`}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{client.companyName}</h3>
-                      <p className="text-sm text-gray-600">{client.ownerName}</p>
-                      <div className="mt-2 flex flex-wrap gap-2 text-sm text-gray-500">
+            <>
+              {/* Mobile Card View */}
+              <div className="lg:hidden space-y-4 p-4">
+                {clients.map((client) => (
+                  <div key={client.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900">{client.companyName}</h3>
+                        <p className="text-sm text-gray-600">{client.ownerName}</p>
+                      </div>
+                      <span className="text-xs text-gray-400">
+                        {new Date(client.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="text-gray-600">
                         {client.email && <span>{client.email}</span>}
-                        {client.phone && <span>• {client.phone}</span>}
+                        {client.phone && <span>{client.email && ' • '}{client.phone}</span>}
                       </div>
                       {client.services.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1">
                           {client.services.map((service) => (
                             <span
                               key={service}
@@ -226,60 +234,141 @@ export default function ClientsPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 ml-4">
-                      <span className="text-xs text-gray-400">
-                        {new Date(client.createdAt).toLocaleDateString()}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        {!showArchived ? (
-                          <>
-                            <button
-                              onClick={() => handleEditClick(client)}
-                              className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="Edit"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleArchiveClick(client)}
-                              disabled={actionLoading}
-                              className="p-2 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors disabled:opacity-50"
-                              title="Archive"
-                            >
-                              {actionLoading ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Archive className="w-4 h-4" />
-                              )}
-                            </button>
-                          </>
-                        ) : (
+                    <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-gray-100">
+                      <button
+                        onClick={() => window.location.href = `/dashboard/clients/${client.id}`}
+                        className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 active:scale-[0.95]"
+                      >
+                        View Details
+                      </button>
+                      {!showArchived ? (
+                        <>
                           <button
-                            onClick={() => handleRestoreClick(client)}
+                            onClick={() => handleEditClick(client)}
+                            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 active:scale-[0.95]"
+                            title="Edit"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleArchiveClick(client)}
                             disabled={actionLoading}
-                            className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
-                            title="Restore"
+                            className="p-2 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-all duration-200 active:scale-[0.95] disabled:opacity-50"
+                            title="Archive"
                           >
                             {actionLoading ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
-                              <RotateCcw className="w-4 h-4" />
+                              <Archive className="w-4 h-4" />
                             )}
                           </button>
-                        )}
+                        </>
+                      ) : (
                         <button
-                          onClick={() => handleDeleteClick(client)}
-                          className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete"
+                          onClick={() => handleRestoreClick(client)}
+                          disabled={actionLoading}
+                          className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Restore"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {actionLoading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <RotateCcw className="w-4 h-4" />
+                          )}
                         </button>
+                      )}
+                      <button
+                        onClick={() => handleDeleteClick(client)}
+                        className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop List View */}
+              <div className="hidden lg:block divide-y divide-gray-100">
+                {clients.map((client) => (
+                  <div key={client.id} className="p-5 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => window.location.href = `/dashboard/clients/${client.id}`}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900">{client.companyName}</h3>
+                        <p className="text-sm text-gray-600">{client.ownerName}</p>
+                        <div className="mt-2 flex flex-wrap gap-2 text-sm text-gray-500">
+                          {client.email && <span>{client.email}</span>}
+                          {client.phone && <span>• {client.phone}</span>}
+                        </div>
+                        {client.services.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {client.services.map((service) => (
+                              <span
+                                key={service}
+                                className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded"
+                              >
+                                {service}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <span className="text-xs text-gray-400">
+                          {new Date(client.createdAt).toLocaleDateString()}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          {!showArchived ? (
+                            <>
+                              <button
+                                onClick={() => handleEditClick(client)}
+                                className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Edit"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleArchiveClick(client)}
+                                disabled={actionLoading}
+                                className="p-2 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors disabled:opacity-50"
+                                title="Archive"
+                              >
+                                {actionLoading ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Archive className="w-4 h-4" />
+                                )}
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => handleRestoreClick(client)}
+                              disabled={actionLoading}
+                              className="p-3 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 active:scale-[0.95] disabled:opacity-50"
+                              title="Restore"
+                            >
+                              {actionLoading ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <RotateCcw className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteClick(client)}
+                            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 active:scale-[0.95]"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       )}

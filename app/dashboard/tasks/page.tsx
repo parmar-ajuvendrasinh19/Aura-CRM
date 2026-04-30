@@ -535,7 +535,7 @@ export default function TasksPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setViewType(viewType === 'card' ? 'table' : 'card')}
-                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 active:scale-[0.95] ${
                   viewType === 'card' ? 'bg-gray-100 text-gray-700' : 'bg-blue-50 text-blue-700'
                 }`}
               >
@@ -547,7 +547,7 @@ export default function TasksPage() {
                   setEditingTask(null)
                   setShowForm(true)
                 }}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-all duration-200 active:scale-[0.95]"
               >
                 <Plus className="h-4 w-4" />
                 New Task
@@ -584,7 +584,7 @@ export default function TasksPage() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 active:scale-[0.95] ${
                 showFilters ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
@@ -711,25 +711,116 @@ export default function TasksPage() {
             {tasks.map(renderTaskCard)}
           </div>
         ) : (
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10"></th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tasks.map(renderTableRow)}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {/* Mobile Card View for Table Mode */}
+            <div className="lg:hidden space-y-3">
+              {tasks.map((task) => {
+                const typeStyle = typeColors[task.type]
+                const priorityStyle = priorityColors[task.priority]
+                const isTaskOverdue = task.isOverdue && task.status !== 'COMPLETED'
+
+                return (
+                  <div
+                    key={task.id}
+                    className={`rounded-lg border bg-white p-4 shadow-sm ${
+                      isTaskOverdue ? 'border-red-300 bg-red-50/50' : 'border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleToggleComplete(task)
+                        }}
+                        className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded border-2 transition-colors z-10 ${
+                          task.isCompleted
+                            ? 'border-green-500 bg-green-500 text-white'
+                            : 'border-gray-300 hover:border-gray-400'
+                        }`}
+                      >
+                        {task.isCompleted && <CheckCircle2 className="h-3.5 w-3.5" />}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`font-medium text-gray-900 ${task.isCompleted ? 'line-through text-gray-500' : ''}`}>
+                          {task.title}
+                        </h3>
+                        {task.description && (
+                          <p className="mt-1 text-sm text-gray-600 line-clamp-2">{task.description}</p>
+                        )}
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border ${typeStyle.bg} ${typeStyle.text} ${typeStyle.border}`}>
+                            {typeLabels[task.type]}
+                          </span>
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${priorityStyle.bg} ${priorityStyle.text}`}>
+                            {priorityLabels[task.priority]}
+                          </span>
+                          {task.dueDate && (
+                            <span className={`inline-flex items-center gap-1 text-xs ${isTaskOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                              <Calendar className="h-3 w-3" />
+                              {format(parseISO(task.dueDate.toString()), 'MMM d')}
+                              {isTaskOverdue && ' (Overdue)'}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                          {task.assignedUser && (
+                            <span className="inline-flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {task.assignedUser.name}
+                            </span>
+                          )}
+                          {task.client && (
+                            <span className="inline-flex items-center gap-1">
+                              <Building2 className="h-3 w-3" />
+                              {task.client.companyName}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-gray-100">
+                      <button
+                        onClick={() => {
+                          setEditingTask(task)
+                          setShowForm(true)
+                        }}
+                        className="p-2 text-gray-400 hover:text-blue-600 rounded"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTask(task.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 rounded"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden lg:block bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10"></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tasks.map(renderTableRow)}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

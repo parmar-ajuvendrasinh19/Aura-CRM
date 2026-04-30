@@ -112,7 +112,7 @@ export function TaskForm({ initialData, users, clients, projects, onSubmit, onCa
       </div>
 
       {/* Type & Priority Row */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label htmlFor="type" className="block text-sm font-medium text-gray-700">
             Type
@@ -243,7 +243,7 @@ export function TaskForm({ initialData, users, clients, projects, onSubmit, onCa
       )}
 
       {/* Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+      <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
         <button
           type="button"
           onClick={onCancel}

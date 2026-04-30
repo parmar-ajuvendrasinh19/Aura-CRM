@@ -140,7 +140,7 @@ export default function AdminUsersPage() {
           {message.text}
           <button
             onClick={() => setMessage(null)}
-            className="ml-4 text-sm underline"
+            className="ml-4 text-sm underline hover:text-gray-700 transition-colors"
           >
             Dismiss
           </button>
@@ -182,108 +182,165 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Users Table */}
-      <div className="overflow-hidden rounded-xl bg-white shadow-soft border border-gray-100">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Email
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Role
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Created Date
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
-            {loading ? (
+      <>
+        {/* Mobile Card View */}
+        <div className="lg:hidden space-y-4">
+          {loading ? (
+            <div className="text-center py-12 text-gray-500">Loading users...</div>
+          ) : users.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">No users found</div>
+          ) : (
+            users.map((user) => (
+              <div key={user.id} className="rounded-xl bg-white shadow-soft border border-gray-100 p-4">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80 text-sm font-medium text-white">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900">{user.name}</h3>
+                    <p className="text-sm text-gray-500">{user.email}</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
+                    {user.role}
+                  </span>
+                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    user.isActive
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {user.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <div className="text-sm text-gray-500 mb-3">
+                  Created: {format(new Date(user.createdAt), 'MMM dd, yyyy')}
+                </div>
+                <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                  <button
+                    onClick={() => router.push(`/admin/users/${user.id}/activity`)}
+                    className="btn-secondary inline-flex items-center px-3 py-1.5"
+                  >
+                    <Activity className="mr-1.5 h-4 w-4" />
+                    Activity
+                  </button>
+                  <button
+                    onClick={() => handleDeleteClick(user)}
+                    className="btn-danger inline-flex items-center px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Trash2 className="mr-1.5 h-4 w-4" />
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden lg:block overflow-hidden rounded-xl bg-white shadow-soft border border-gray-100">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                  Loading users...
-                </td>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Name
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Email
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Role
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Created Date
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Actions
+                </th>
               </tr>
-            ) : users.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                  No users found
-                </td>
-              </tr>
-            ) : (
-              users.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80 text-sm font-medium text-white">
-                        {user.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {user.email}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${getRoleBadgeColor(user.role)}`}
-                    >
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        user.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {user.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {format(new Date(user.createdAt), 'MMM dd, yyyy')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => router.push(`/admin/users/${user.id}/activity`)}
-                        className="btn-secondary inline-flex items-center px-3 py-1.5"
-                      >
-                        <Activity className="mr-1.5 h-4 w-4" />
-                        Activity
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(user)}
-                        className="btn-danger inline-flex items-center px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <Trash2 className="mr-1.5 h-4 w-4" />
-                        Delete
-                      </button>
-                    </div>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                    Loading users...
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                    No users found
+                  </td>
+                </tr>
+              ) : (
+                users.map((user) => (
+                  <tr key={user.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80 text-sm font-medium text-white">
+                          {user.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {user.email}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${getRoleBadgeColor(user.role)}`}
+                      >
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          user.isActive
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {user.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {format(new Date(user.createdAt), 'MMM dd, yyyy')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => router.push(`/admin/users/${user.id}/activity`)}
+                          className="btn-secondary inline-flex items-center px-3 py-1.5 transition-all duration-200 active:scale-[0.95]"
+                        >
+                          <Activity className="mr-1.5 h-4 w-4" />
+                          Activity
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(user)}
+                          className="btn-danger inline-flex items-center px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 active:scale-[0.95]"
+                        >
+                          <Trash2 className="mr-1.5 h-4 w-4" />
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </>
 
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-sm text-gray-600">
             Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
             {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
@@ -293,7 +350,7 @@ export default function AdminUsersPage() {
             <button
               onClick={() => handlePageChange(pagination.page - 1)}
               disabled={pagination.page === 1}
-              className="btn-secondary inline-flex items-center px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn-secondary inline-flex items-center px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 active:scale-[0.95]"
             >
               <ChevronLeft className="mr-1 h-4 w-4" />
               Previous
@@ -301,10 +358,10 @@ export default function AdminUsersPage() {
             <button
               onClick={() => handlePageChange(pagination.page + 1)}
               disabled={pagination.page === pagination.totalPages}
-              className="btn-secondary inline-flex items-center px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn-secondary inline-flex items-center px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 active:scale-[0.95]"
             >
-              Next
               <ChevronRight className="ml-1 h-4 w-4" />
+              Next
             </button>
           </div>
         </div>
@@ -312,7 +369,7 @@ export default function AdminUsersPage() {
 
       {/* Delete Confirmation Modal */}
       {deleteModal.show && deleteModal.user && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md card p-6">
             <div className="mb-4 flex items-center">
               <div className="mr-3 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
@@ -354,7 +411,7 @@ export default function AdminUsersPage() {
               />
             </div>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex flex-col sm:flex-row justify-end gap-3">
               <button
                 onClick={() => setDeleteModal({ show: false, user: null })}
                 disabled={deleting}

@@ -10,7 +10,8 @@ import {
   Shield,
   CheckSquare,
   CreditCard,
-  Settings
+  Settings,
+  X
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -22,7 +23,11 @@ const userMenu = [
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void
+}
+
+export function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [userRole, setUserRole] = useState<string | null>(null)
@@ -52,15 +57,28 @@ export function Sidebar() {
     }
   }
 
+  const handleLinkClick = () => {
+    if (onClose) onClose()
+  }
+
   return (
     <div className="flex h-full w-64 flex-col bg-gray-950">
-      <div className="flex h-16 items-center justify-center border-b border-gray-800">
+      <div className="flex h-16 items-center justify-between px-4 border-b border-gray-800">
         <h1 className="text-xl font-bold text-white">WebAura CRM</h1>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            <X className="h-5 w-5 text-gray-400" />
+          </button>
+        )}
       </div>
       <nav className="flex-1 space-y-1 px-3 py-4">
         {userRole === 'ADMIN' && (
           <Link
             href="/admin/users"
+            onClick={handleLinkClick}
             className={cn(
               'flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-2',
               pathname.startsWith('/admin')
@@ -79,6 +97,7 @@ export function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
+              onClick={handleLinkClick}
               className={cn(
                 'flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                 isActive

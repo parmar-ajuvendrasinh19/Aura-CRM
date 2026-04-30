@@ -24,10 +24,15 @@ import { TaskForm } from '@/components/TaskForm'
 const typeColors: Record<TaskType, { bg: string; text: string; border: string }> = {
   MEETING: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
   FOLLOW_UP: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
-  PAYMENT: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' },
+  FEEDBACK: { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' },
+  ONBOARDING: { bg: 'bg-teal-50', text: 'text-teal-700', border: 'border-teal-200' },
+  PAYMENT_REMINDER: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' },
+  INVOICE: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  SUBSCRIPTION: { bg: 'bg-lime-50', text: 'text-lime-700', border: 'border-lime-200' },
   CAMPAIGN: { bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-pink-200' },
   CONTENT: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' },
   DEVELOPMENT: { bg: 'bg-cyan-50', text: 'text-cyan-700', border: 'border-cyan-200' },
+  DESIGN: { bg: 'bg-fuchsia-50', text: 'text-fuchsia-700', border: 'border-fuchsia-200' },
   INTERNAL: { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200' },
   ALERT: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
 }
@@ -41,10 +46,15 @@ const priorityColors: Record<TaskPriority, { bg: string; text: string }> = {
 const typeLabels: Record<TaskType, string> = {
   MEETING: 'Meeting',
   FOLLOW_UP: 'Follow Up',
-  PAYMENT: 'Payment',
+  FEEDBACK: 'Feedback',
+  ONBOARDING: 'Onboarding',
+  PAYMENT_REMINDER: 'Payment Reminder',
+  INVOICE: 'Invoice',
+  SUBSCRIPTION: 'Subscription',
   CAMPAIGN: 'Campaign',
   CONTENT: 'Content',
   DEVELOPMENT: 'Development',
+  DESIGN: 'Design',
   INTERNAL: 'Internal',
   ALERT: 'Alert',
 }
@@ -319,14 +329,14 @@ export default function AdminTasksPage() {
           <ArrowLeft className="h-4 w-4" />
           Back to Admin
         </Link>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Task Management</h1>
             <p className="text-sm text-gray-500 mt-1">Admin view of all tasks</p>
           </div>
           <button
             onClick={() => { setEditingTask(null); setShowForm(true) }}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-all duration-200 active:scale-[0.95]"
           >
             <Plus className="h-4 w-4" />
             New Task
@@ -335,14 +345,14 @@ export default function AdminTasksPage() {
       </div>
 
       {/* Section Tabs */}
-      <div className="flex gap-1 border-b border-gray-200 mb-6">
+      <div className="flex gap-1 border-b border-gray-200 mb-6 overflow-x-auto">
         {sections.map((section) => {
           const Icon = section.icon
           return (
             <button
               key={section.key}
               onClick={() => setActiveSection(section.key)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all duration-200 active:scale-[0.95] whitespace-nowrap ${
                 activeSection === section.key
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -360,7 +370,7 @@ export default function AdminTasksPage() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium ${
+            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 active:scale-[0.95] ${
               showFilters ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
             }`}
           >

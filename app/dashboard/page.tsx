@@ -249,7 +249,7 @@ export default function DashboardPage() {
               return (
                 <div
                   key={card.title}
-                  className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
+                  className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.98]"
                   onClick={() => router.push(card.link)}
                 >
                   <div className="flex items-center justify-between">
@@ -271,13 +271,13 @@ export default function DashboardPage() {
           </div>
 
           {/* Payment Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {paymentCards.map((card) => {
               const Icon = card.icon
               return (
                 <div
                   key={card.title}
-                  className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
+                  className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.98]"
                   onClick={() => router.push(card.link)}
                 >
                   <div className="flex items-center justify-between">
@@ -390,7 +390,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <button
                 onClick={() => router.push('/dashboard/tasks')}
-                className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
+                className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200 text-left active:scale-[0.98] min-h-[64px]"
               >
                 <div className="p-2 bg-blue-50 rounded-lg">
                   <Calendar className="h-5 w-5 text-blue-600" />
@@ -402,7 +402,7 @@ export default function DashboardPage() {
               </button>
               <button
                 onClick={() => router.push('/dashboard/clients')}
-                className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
+                className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200 text-left active:scale-[0.98] min-h-[64px]"
               >
                 <div className="p-2 bg-green-50 rounded-lg">
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -414,7 +414,7 @@ export default function DashboardPage() {
               </button>
               <button
                 onClick={() => router.push('/dashboard/payments')}
-                className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
+                className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200 text-left active:scale-[0.98] min-h-[64px]"
               >
                 <div className="p-2 bg-purple-50 rounded-lg">
                   <Clock className="h-5 w-5 text-purple-600" />

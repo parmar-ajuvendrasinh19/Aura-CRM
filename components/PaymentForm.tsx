@@ -78,7 +78,7 @@ export default function PaymentForm({ onSuccess, onCancel, initialData }: Paymen
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Amount (₹)
@@ -110,7 +110,7 @@ export default function PaymentForm({ onSuccess, onCancel, initialData }: Paymen
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Status
@@ -146,7 +146,7 @@ export default function PaymentForm({ onSuccess, onCancel, initialData }: Paymen
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Due Date
@@ -185,7 +185,7 @@ export default function PaymentForm({ onSuccess, onCancel, initialData }: Paymen
         />
       </div>
 
-      <div className="flex items-center justify-end gap-3 pt-4">
+      <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4">
         <button
           type="button"
           onClick={onCancel}
