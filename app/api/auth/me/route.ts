@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
         id: fullUser.id,
         email: fullUser.email,
         name: fullUser.name,
+        phone: fullUser.phone,
         role: fullUser.role,
         avatar: fullUser.avatar,
       },

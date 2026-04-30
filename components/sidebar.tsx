@@ -9,7 +9,8 @@ import {
   LogOut,
   Shield,
   CheckSquare,
-  CreditCard
+  CreditCard,
+  Settings
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -18,6 +19,7 @@ const userMenu = [
   { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
   { name: 'Clients', href: '/dashboard/clients', icon: Users },
   { name: 'Payments', href: '/dashboard/payments', icon: CreditCard },
+  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
 export function Sidebar() {

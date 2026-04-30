@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     const clientId = searchParams.get('clientId')
     const section = searchParams.get('section')
     const isCompleted = searchParams.get('isCompleted')
+    const overdue = searchParams.get('overdue')
 
     const where: any = {}
     
@@ -53,6 +54,14 @@ export async function GET(request: NextRequest) {
       where.isCompleted = false
     } else if (section === 'completed') {
       where.isCompleted = true
+    }
+
+    // Handle overdue query param
+    if (overdue === 'true') {
+      where.dueDate = {
+        lt: today,
+      }
+      where.isCompleted = false
     }
 
     const tasks = await prisma.task.findMany({

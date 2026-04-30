@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type')
     const clientId = searchParams.get('clientId')
     const section = searchParams.get('section')
+    const overdue = searchParams.get('overdue')
 
     const where: any = {}
     
@@ -31,6 +32,16 @@ export async function GET(request: NextRequest) {
       }
     } else if (section === 'pending') {
       where.status = 'PENDING'
+    }
+
+    // Handle overdue query param
+    if (overdue === 'true') {
+      where.dueDate = {
+        lt: today,
+      }
+      where.status = {
+        in: ['PENDING', 'PARTIAL'],
+      }
     }
 
     const payments = await prisma.payment.findMany({

@@ -33,6 +33,23 @@ interface PaymentStats {
   overduePayments: number
 }
 
+interface OverdueTask {
+  id: string
+  title: string
+  dueDate: string
+  priority: string
+  assignee?: { name: string }
+  client?: { companyName: string }
+}
+
+interface OverduePayment {
+  id: string
+  amount: number
+  dueDate: string
+  client?: { companyName: string }
+  project?: { name: string }
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [stats, setStats] = useState<TaskStats>({
@@ -46,11 +63,15 @@ export default function DashboardPage() {
     pendingPayments: 0,
     overduePayments: 0,
   })
+  const [overdueTasks, setOverdueTasks] = useState<OverdueTask[]>([])
+  const [overduePayments, setOverduePayments] = useState<OverduePayment[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchTaskStats()
     fetchPaymentStats()
+    fetchOverdueTasks()
+    fetchOverduePayments()
   }, [])
 
   const fetchTaskStats = async () => {
@@ -112,6 +133,30 @@ export default function DashboardPage() {
       console.error('Error fetching payment stats:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchOverdueTasks = async () => {
+    try {
+      const response = await fetch('/api/tasks?overdue=true')
+      if (response.ok) {
+        const tasks = await response.json()
+        setOverdueTasks(tasks.slice(0, 5)) // Show top 5 overdue tasks
+      }
+    } catch (error) {
+      console.error('Error fetching overdue tasks:', error)
+    }
+  }
+
+  const fetchOverduePayments = async () => {
+    try {
+      const response = await fetch('/api/payments?overdue=true')
+      if (response.ok) {
+        const payments = await response.json()
+        setOverduePayments(payments.slice(0, 5)) // Show top 5 overdue payments
+      }
+    } catch (error) {
+      console.error('Error fetching overdue payments:', error)
     }
   }
 
@@ -251,6 +296,92 @@ export default function DashboardPage() {
                 </div>
               )
             })}
+          </div>
+
+          {/* Overdue Alerts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Overdue Tasks */}
+            <div className="bg-white rounded-xl border border-red-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-red-600" />
+                  <h2 className="text-lg font-semibold text-gray-900">🔴 Overdue Tasks</h2>
+                </div>
+                <span className="text-sm font-medium text-red-600 bg-red-50 px-2 py-1 rounded-full">
+                  {overdueTasks.length}
+                </span>
+              </div>
+              {overdueTasks.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">No overdue tasks</p>
+              ) : (
+                <div className="space-y-3">
+                  {overdueTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex items-start gap-3 p-3 rounded-lg bg-red-50 border border-red-100 hover:bg-red-100 transition-colors cursor-pointer"
+                      onClick={() => router.push(`/dashboard/tasks`)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 text-sm">{task.title}</p>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-600">
+                          <span className="text-red-600 font-medium">
+                            Due: {format(parseISO(task.dueDate), 'MMM d, yyyy')}
+                          </span>
+                          {task.assignee && <span>• {task.assignee.name}</span>}
+                          {task.client && <span>• {task.client.companyName}</span>}
+                        </div>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        task.priority === 'HIGH' ? 'bg-red-100 text-red-800' :
+                        task.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {task.priority}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Overdue Payments */}
+            <div className="bg-white rounded-xl border border-red-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-red-600" />
+                  <h2 className="text-lg font-semibold text-gray-900">🔴 Pending Payments</h2>
+                </div>
+                <span className="text-sm font-medium text-red-600 bg-red-50 px-2 py-1 rounded-full">
+                  {overduePayments.length}
+                </span>
+              </div>
+              {overduePayments.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">No overdue payments</p>
+              ) : (
+                <div className="space-y-3">
+                  {overduePayments.map((payment) => (
+                    <div
+                      key={payment.id}
+                      className="flex items-start gap-3 p-3 rounded-lg bg-red-50 border border-red-100 hover:bg-red-100 transition-colors cursor-pointer"
+                      onClick={() => router.push(`/dashboard/payments`)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 text-sm">
+                          {formatCurrency(payment.amount)}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-600">
+                          <span className="text-red-600 font-medium">
+                            Due: {format(parseISO(payment.dueDate), 'MMM d, yyyy')}
+                          </span>
+                          {payment.client && <span>• {payment.client.companyName}</span>}
+                          {payment.project && <span>• {payment.project.name}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Quick Actions */}
