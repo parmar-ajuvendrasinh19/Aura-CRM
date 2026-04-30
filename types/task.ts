@@ -1,65 +1,83 @@
-export type TaskType = 'MEETING' | 'FOLLOW_UP' | 'PAYMENT' | 'CAMPAIGN' | 'CONTENT' | 'DEVELOPMENT' | 'INTERNAL' | 'ALERT'
+export enum TaskType {
+  // Client Interaction
+  MEETING = 'MEETING',
+  FOLLOW_UP = 'FOLLOW_UP',
+  FEEDBACK = 'FEEDBACK',
+  ONBOARDING = 'ONBOARDING',
+  
+  // Finance
+  PAYMENT_REMINDER = 'PAYMENT_REMINDER',
+  INVOICE = 'INVOICE',
+  SUBSCRIPTION = 'SUBSCRIPTION',
+  
+  // Marketing
+  CAMPAIGN = 'CAMPAIGN',
+  CONTENT = 'CONTENT',
+  
+  // Internal
+  DEVELOPMENT = 'DEVELOPMENT',
+  DESIGN = 'DESIGN',
+  INTERNAL = 'INTERNAL',
+  
+  // Alerts
+  ALERT = 'ALERT',
+}
 
-export type TaskPriority = 'HIGH' | 'MEDIUM' | 'LOW'
+export enum TaskPriority {
+  HIGH = 'HIGH',
+  MEDIUM = 'MEDIUM',
+  LOW = 'LOW',
+}
 
-export type TaskStatus = 'PENDING' | 'COMPLETED'
+export enum TaskStatus {
+  TODO = 'TODO',
+  IN_PROGRESS = 'IN_PROGRESS',
+  REVIEW = 'REVIEW',
+  COMPLETED = 'COMPLETED',
+}
 
 export interface Task {
   id: string
   title: string
-  description: string | null
+  description?: string | null
   type: TaskType
   priority: TaskPriority
   status: TaskStatus
-  dueDate: string | null
-  isOverdue: boolean
-  assignedTo: string | null
-  assignedUser: {
+  dueDate?: string | null
+  isCompleted: boolean
+  projectId?: string | null
+  assigneeId?: string | null
+  creatorId: string
+  clientId?: string | null
+  createdAt: string
+  updatedAt: string
+  
+  // Relations
+  project?: {
+    id: string
+    name: string
+  } | null
+  assignee?: {
     id: string
     name: string
     email: string
-    avatar: string | null
   } | null
-  clientId: string | null
-  client: {
-    id: string
-    companyName: string
-    ownerName: string
-  } | null
-  projectId: string | null
-  project: {
-    id: string
-    name: string
-  } | null
-  creatorId: string
-  creator: {
+  creator?: {
     id: string
     name: string
   }
-  createdAt: string
-  updatedAt: string
+  client?: {
+    id: string
+    companyName: string
+  } | null
+  assignedUser?: {
+    id: string
+    name: string
+    email: string
+  } | null
+  
+  // Computed
+  isOverdue?: boolean
 }
 
-export interface CreateTaskInput {
-  title: string
-  description?: string
-  type: TaskType
-  priority: TaskPriority
-  status: TaskStatus
-  dueDate?: string
-  assignedTo: string
-  clientId?: string
-  projectId?: string
-}
-
-export interface UpdateTaskInput {
-  title?: string
-  description?: string
-  type?: TaskType
-  priority?: TaskPriority
-  status?: TaskStatus
-  dueDate?: string | null
-  assignedTo?: string
-  clientId?: string | null
-  projectId?: string | null
-}
+export type TaskFormData = Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'project' | 'assignee' | 'creator' | 'client' | 'assignedUser' | 'isOverdue'>

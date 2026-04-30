@@ -45,13 +45,14 @@ export const projectSchema = z.object({
 export const taskSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters'),
   description: z.string().optional(),
-  type: z.enum(['MEETING', 'FOLLOW_UP', 'PAYMENT', 'CAMPAIGN', 'CONTENT', 'DEVELOPMENT', 'INTERNAL', 'ALERT']).default('INTERNAL'),
+  type: z.enum(['MEETING', 'FOLLOW_UP', 'FEEDBACK', 'ONBOARDING', 'PAYMENT_REMINDER', 'INVOICE', 'SUBSCRIPTION', 'CAMPAIGN', 'CONTENT', 'DEVELOPMENT', 'DESIGN', 'INTERNAL', 'ALERT']).default('INTERNAL'),
   priority: z.enum(['HIGH', 'MEDIUM', 'LOW']).default('MEDIUM'),
-  status: z.enum(['PENDING', 'COMPLETED']).default('PENDING'),
+  status: z.enum(['TODO', 'IN_PROGRESS', 'REVIEW', 'COMPLETED']).default('TODO'),
   dueDate: z.string().optional(),
-  assignedTo: z.string().min(1, 'Assignee is required'),
-  clientId: z.string().optional(),
+  isCompleted: z.boolean().default(false),
   projectId: z.string().optional(),
+  assigneeId: z.string().optional(),
+  clientId: z.string().optional(),
 })
 
 export const dealSchema = z.object({

@@ -12,7 +12,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Only admins and managers can view users
+    const { searchParams } = new URL(request.url)
+    const forAssignment = searchParams.get('forAssignment')
+
+    // For task assignment, allow all authenticated users to see active users
+    if (forAssignment === 'true') {
+      const users = await prisma.user.findMany({
+        where: {
+          isActive: true,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+        orderBy: { name: 'asc' },
+      })
+
+      return NextResponse.json(users)
+    }
+
+    // Only admins and managers can view full user details
     if (user.role !== 'ADMIN' && user.role !== 'MANAGER') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }

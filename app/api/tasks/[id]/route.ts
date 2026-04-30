@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/server-auth'
 import { taskSchema } from '@/lib/validations'
-import { startOfDay, isBefore } from 'date-fns'
 
 export async function GET(
   request: NextRequest,
@@ -21,9 +20,9 @@ export async function GET(
       },
       include: {
         project: { select: { id: true, name: true } },
-        assignedUser: { select: { id: true, name: true, email: true, avatar: true } },
+        assignee: { select: { id: true, name: true, email: true } },
         creator: { select: { id: true, name: true } },
-        client: { select: { id: true, companyName: true, ownerName: true } },
+        client: { select: { id: true, companyName: true } },
         activities: {
           include: { user: true },
           orderBy: { date: 'desc' },
@@ -57,40 +56,22 @@ export async function PATCH(
     }
 
     const body = await request.json()
+    console.log('PATCH /api/tasks/[id] - Request body:', body)
     
-    // Build update data from body (partial updates allowed)
-    const updateData: any = {}
-    
-    if (body.title !== undefined) updateData.title = body.title
-    if (body.description !== undefined) updateData.description = body.description
-    if (body.type !== undefined) updateData.type = body.type
-    if (body.priority !== undefined) updateData.priority = body.priority
-    if (body.status !== undefined) updateData.status = body.status
-    if (body.assignedTo !== undefined) updateData.assignedTo = body.assignedTo
-    if (body.clientId !== undefined) updateData.clientId = body.clientId || null
-    if (body.projectId !== undefined) updateData.projectId = body.projectId || null
-    
-    // Handle due date and overdue calculation
-    if (body.dueDate !== undefined) {
-      updateData.dueDate = body.dueDate ? new Date(body.dueDate) : null
-      
-      // Recalculate overdue status
-      if (updateData.dueDate && body.status !== 'COMPLETED') {
-        updateData.isOverdue = isBefore(startOfDay(updateData.dueDate), startOfDay(new Date()))
-      }
-    }
-    
-    // When marking as completed, clear overdue flag
-    if (body.status === 'COMPLETED') {
-      updateData.isOverdue = false
-    }
+    const validatedData = taskSchema.partial().parse(body)
+    console.log('PATCH /api/tasks/[id] - Validated data:', validatedData)
 
     const task = await prisma.task.updateMany({
       where: {
         id: params.id,
       },
-      data: updateData,
+      data: {
+        ...validatedData,
+        dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : undefined,
+      },
     })
+    
+    console.log('PATCH /api/tasks/[id] - Update count:', task.count)
 
     if (task.count === 0) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })
@@ -100,11 +81,17 @@ export async function PATCH(
       where: { id: params.id },
       include: {
         project: { select: { id: true, name: true } },
-        assignedUser: { select: { id: true, name: true, email: true, avatar: true } },
+        assignee: { select: { id: true, name: true, email: true } },
         creator: { select: { id: true, name: true } },
-        client: { select: { id: true, companyName: true, ownerName: true } },
+        client: { select: { id: true, companyName: true } },
       },
     })
+
+    // Add assignedUser alias to match frontend expectations
+    const taskWithAlias = updatedTask ? {
+      ...updatedTask,
+      assignedUser: updatedTask.assignee,
+    } : null
 
     // Log activity
     await prisma.activityLog.create({
@@ -117,7 +104,7 @@ export async function PATCH(
       }
     })
 
-    return NextResponse.json(updatedTask)
+    return NextResponse.json(taskWithAlias)
   } catch (error: any) {
     console.error('Update task error:', error)
     return NextResponse.json(
@@ -143,15 +130,15 @@ export async function DELETE(
       where: { id: params.id },
     })
 
-    if (!taskToDelete) {
-      return NextResponse.json({ error: 'Task not found' }, { status: 404 })
-    }
-
-    await prisma.task.delete({
+    const task = await prisma.task.deleteMany({
       where: {
         id: params.id,
       },
     })
+
+    if (task.count === 0) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 })
+    }
 
     // Log activity
     await prisma.activityLog.create({

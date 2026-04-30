@@ -8,18 +8,18 @@ import {
   Users, 
   TrendingUp,
   DollarSign,
-  CheckSquare,
   LogOut,
-  Shield
+  Shield,
+  CheckSquare
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const userMenu = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
   { name: 'Clients', href: '/dashboard/clients', icon: Users },
   { name: 'Leads', href: '/dashboard/leads', icon: TrendingUp },
   { name: 'Deals', href: '/dashboard/deals', icon: DollarSign },
-  { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
 ]
 
 export function Sidebar() {

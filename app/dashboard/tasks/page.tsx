@@ -15,20 +15,28 @@ import {
   MoreVertical,
   Edit2,
   Trash2,
-  X
+  X,
+  List,
+  LayoutGrid
 } from 'lucide-react'
 import { format, isToday, isPast, isFuture, parseISO } from 'date-fns'
 import toast from 'react-hot-toast'
 import { Task, TaskType, TaskPriority, TaskStatus } from '@/types/task'
 import { TaskForm } from '@/components/TaskForm'
+import { fetchWithAuth } from '@/lib/fetch-with-auth'
 
 const typeColors: Record<TaskType, { bg: string; text: string; border: string }> = {
   MEETING: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
   FOLLOW_UP: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
-  PAYMENT: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' },
+  FEEDBACK: { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' },
+  ONBOARDING: { bg: 'bg-teal-50', text: 'text-teal-700', border: 'border-teal-200' },
+  PAYMENT_REMINDER: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' },
+  INVOICE: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  SUBSCRIPTION: { bg: 'bg-lime-50', text: 'text-lime-700', border: 'border-lime-200' },
   CAMPAIGN: { bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-pink-200' },
   CONTENT: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' },
   DEVELOPMENT: { bg: 'bg-cyan-50', text: 'text-cyan-700', border: 'border-cyan-200' },
+  DESIGN: { bg: 'bg-fuchsia-50', text: 'text-fuchsia-700', border: 'border-fuchsia-200' },
   INTERNAL: { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200' },
   ALERT: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
 }
@@ -42,10 +50,15 @@ const priorityColors: Record<TaskPriority, { bg: string; text: string }> = {
 const typeLabels: Record<TaskType, string> = {
   MEETING: 'Meeting',
   FOLLOW_UP: 'Follow Up',
-  PAYMENT: 'Payment',
+  FEEDBACK: 'Feedback',
+  ONBOARDING: 'Onboarding',
+  PAYMENT_REMINDER: 'Payment Reminder',
+  INVOICE: 'Invoice',
+  SUBSCRIPTION: 'Subscription',
   CAMPAIGN: 'Campaign',
   CONTENT: 'Content',
   DEVELOPMENT: 'Development',
+  DESIGN: 'Design',
   INTERNAL: 'Internal',
   ALERT: 'Alert',
 }
@@ -57,10 +70,12 @@ const priorityLabels: Record<TaskPriority, string> = {
 }
 
 type SectionType = 'today' | 'upcoming' | 'overdue' | 'completed'
+type ViewType = 'card' | 'table'
 
 interface Filters {
   type: TaskType | ''
   priority: TaskPriority | ''
+  status: TaskStatus | ''
   assignedTo: string
   clientId: string
 }
@@ -73,11 +88,13 @@ export default function TasksPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [activeSection, setActiveSection] = useState<SectionType>('today')
   const [showFilters, setShowFilters] = useState(false)
+  const [viewType, setViewType] = useState<ViewType>('card')
   const [users, setUsers] = useState<{ id: string; name: string; email: string }[]>([])
   const [clients, setClients] = useState<{ id: string; companyName: string }[]>([])
   const [filters, setFilters] = useState<Filters>({
     type: '',
     priority: '',
+    status: '',
     assignedTo: '',
     clientId: '',
   })
@@ -96,7 +113,7 @@ export default function TasksPage() {
       if (filters.assignedTo) queryParams.set('assignedTo', filters.assignedTo)
       if (filters.clientId) queryParams.set('clientId', filters.clientId)
 
-      const response = await fetch(`/api/tasks?${queryParams}`)
+      const response = await fetchWithAuth(`/api/tasks?${queryParams}`)
       if (!response.ok) throw new Error('Failed to fetch tasks')
       
       const data = await response.json()
@@ -111,7 +128,7 @@ export default function TasksPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/users')
+      const response = await fetchWithAuth('/api/users?forAssignment=true')
       if (response.ok) {
         const data = await response.json()
         setUsers(data)
@@ -123,7 +140,7 @@ export default function TasksPage() {
 
   const fetchClients = async () => {
     try {
-      const response = await fetch('/api/clients')
+      const response = await fetchWithAuth('/api/clients')
       if (response.ok) {
         const data = await response.json()
         setClients(data)
@@ -143,20 +160,43 @@ export default function TasksPage() {
   }, [fetchTasks])
 
   const handleCreateTask = async (taskData: any) => {
+    console.log('TasksPage - handleCreateTask called with data:', taskData)
+    
+    // Clean up empty string values to undefined for optional fields
+    const cleanedData = {
+      ...taskData,
+      assigneeId: taskData.assigneeId || undefined,
+      clientId: taskData.clientId || undefined,
+      projectId: taskData.projectId || undefined,
+      dueDate: taskData.dueDate || undefined,
+      description: taskData.description || undefined,
+    }
+    
+    console.log('TasksPage - Cleaned data for API:', cleanedData)
+    
     try {
-      const response = await fetch('/api/tasks', {
+      const response = await fetchWithAuth('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(taskData),
+        body: JSON.stringify(cleanedData),
       })
 
-      if (!response.ok) throw new Error('Failed to create task')
+      console.log('TasksPage - API response status:', response.status)
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('TasksPage - API error:', errorData)
+        throw new Error('Failed to create task')
+      }
 
+      const result = await response.json()
+      console.log('TasksPage - Task created successfully:', result)
+      
       toast.success('Task created successfully')
       setShowForm(false)
       fetchTasks()
     } catch (error) {
-      console.error('Error creating task:', error)
+      console.error('TasksPage - Error creating task:', error)
       toast.error('Failed to create task')
     }
   }
@@ -164,21 +204,44 @@ export default function TasksPage() {
   const handleUpdateTask = async (taskData: any) => {
     if (!editingTask) return
 
+    console.log('TasksPage - handleUpdateTask called with data:', taskData)
+    
+    // Clean up empty string values to undefined for optional fields
+    const cleanedData = {
+      ...taskData,
+      assigneeId: taskData.assigneeId || undefined,
+      clientId: taskData.clientId || undefined,
+      projectId: taskData.projectId || undefined,
+      dueDate: taskData.dueDate || undefined,
+      description: taskData.description || undefined,
+    }
+    
+    console.log('TasksPage - Cleaned data for API:', cleanedData)
+
     try {
-      const response = await fetch(`/api/tasks/${editingTask.id}`, {
+      const response = await fetchWithAuth(`/api/tasks/${editingTask.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(taskData),
+        body: JSON.stringify(cleanedData),
       })
 
-      if (!response.ok) throw new Error('Failed to update task')
+      console.log('TasksPage - API response status:', response.status)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('TasksPage - API error:', errorData)
+        throw new Error('Failed to update task')
+      }
+
+      const result = await response.json()
+      console.log('TasksPage - Task updated successfully:', result)
 
       toast.success('Task updated successfully')
       setEditingTask(null)
       setShowForm(false)
       fetchTasks()
     } catch (error) {
-      console.error('Error updating task:', error)
+      console.error('TasksPage - Error updating task:', error)
       toast.error('Failed to update task')
     }
   }
@@ -187,7 +250,7 @@ export default function TasksPage() {
     if (!confirm('Are you sure you want to delete this task?')) return
 
     try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
+      const response = await fetchWithAuth(`/api/tasks/${taskId}`, {
         method: 'DELETE',
       })
 
@@ -203,16 +266,32 @@ export default function TasksPage() {
 
   const handleToggleComplete = async (task: Task) => {
     try {
-      const newStatus = task.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED'
-      const response = await fetch(`/api/tasks/${task.id}`, {
+      const newIsCompleted = !task.isCompleted
+      const newStatus = newIsCompleted ? TaskStatus.COMPLETED : TaskStatus.TODO
+      
+      console.log('handleToggleComplete - Task ID:', task.id)
+      console.log('handleToggleComplete - Current isCompleted:', task.isCompleted)
+      console.log('handleToggleComplete - New isCompleted:', newIsCompleted)
+      console.log('handleToggleComplete - New status:', newStatus)
+      
+      const response = await fetchWithAuth(`/api/tasks/${task.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ isCompleted: newIsCompleted, status: newStatus }),
       })
 
-      if (!response.ok) throw new Error('Failed to update task')
+      console.log('handleToggleComplete - Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('handleToggleComplete - Error response:', errorData)
+        throw new Error('Failed to update task')
+      }
 
-      toast.success(newStatus === 'COMPLETED' ? 'Task marked as completed' : 'Task marked as pending')
+      const result = await response.json()
+      console.log('handleToggleComplete - Updated task:', result)
+
+      toast.success(newIsCompleted ? 'Task marked as completed' : 'Task marked as pending')
       fetchTasks()
     } catch (error) {
       console.error('Error updating task:', error)
@@ -241,21 +320,24 @@ export default function TasksPage() {
       >
         <div className="flex items-start gap-3">
           <button
-            onClick={() => handleToggleComplete(task)}
-            className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded border-2 transition-colors ${
-              task.status === 'COMPLETED'
+            onClick={(e) => {
+              e.stopPropagation()
+              handleToggleComplete(task)
+            }}
+            className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded border-2 transition-colors z-10 ${
+              task.isCompleted
                 ? 'border-green-500 bg-green-500 text-white'
                 : 'border-gray-300 hover:border-gray-400'
             }`}
           >
-            {task.status === 'COMPLETED' && <CheckCircle2 className="h-3.5 w-3.5" />}
+            {task.isCompleted && <CheckCircle2 className="h-3.5 w-3.5" />}
           </button>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <h3
                 className={`font-medium text-gray-900 ${
-                  task.status === 'COMPLETED' ? 'line-through text-gray-500' : ''
+                  task.isCompleted ? 'line-through text-gray-500' : ''
                 }`}
               >
                 {task.title}
@@ -333,6 +415,113 @@ export default function TasksPage() {
     )
   }
 
+  const renderTableRow = (task: Task) => {
+    const typeStyle = typeColors[task.type]
+    const priorityStyle = priorityColors[task.priority]
+    const isTaskOverdue = task.isOverdue && task.status !== 'COMPLETED'
+
+    return (
+      <tr
+        key={task.id}
+        className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${
+          isTaskOverdue ? 'bg-red-50/30' : ''
+        }`}
+      >
+        <td className="px-4 py-3">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              handleToggleComplete(task)
+            }}
+            className={`flex h-5 w-5 items-center justify-center rounded border-2 transition-colors z-10 ${
+              task.isCompleted
+                ? 'border-green-500 bg-green-500 text-white'
+                : 'border-gray-300 hover:border-gray-400'
+            }`}
+          >
+            {task.isCompleted && <CheckCircle2 className="h-3.5 w-3.5" />}
+          </button>
+        </td>
+        <td className="px-4 py-3">
+          <div className={`font-medium text-gray-900 ${task.isCompleted ? 'line-through text-gray-500' : ''}`}>
+            {task.title}
+          </div>
+          {task.description && (
+            <div className="text-sm text-gray-500 line-clamp-1">{task.description}</div>
+          )}
+        </td>
+        <td className="px-4 py-3">
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border ${typeStyle.bg} ${typeStyle.text} ${typeStyle.border}`}
+          >
+            {typeLabels[task.type]}
+          </span>
+        </td>
+        <td className="px-4 py-3">
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${priorityStyle.bg} ${priorityStyle.text}`}
+          >
+            {priorityLabels[task.priority]}
+          </span>
+        </td>
+        <td className="px-4 py-3">
+          {task.dueDate ? (
+            <span
+              className={`inline-flex items-center gap-1 text-sm ${
+                isTaskOverdue ? 'text-red-600 font-medium' : 'text-gray-600'
+              }`}
+            >
+              <Calendar className="h-3 w-3" />
+              {format(parseISO(task.dueDate.toString()), 'MMM d, yyyy')}
+              {isTaskOverdue && ' (Overdue)'}
+            </span>
+          ) : (
+            <span className="text-gray-400">—</span>
+          )}
+        </td>
+        <td className="px-4 py-3">
+          {task.assignedUser ? (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <User className="h-3 w-3" />
+              {task.assignedUser.name}
+            </div>
+          ) : (
+            <span className="text-gray-400">—</span>
+          )}
+        </td>
+        <td className="px-4 py-3">
+          {task.client ? (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Building2 className="h-3 w-3" />
+              {task.client.companyName}
+            </div>
+          ) : (
+            <span className="text-gray-400">—</span>
+          )}
+        </td>
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => {
+                setEditingTask(task)
+                setShowForm(true)
+              }}
+              className="p-1 text-gray-400 hover:text-blue-600 rounded"
+            >
+              <Edit2 className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => handleDeleteTask(task.id)}
+              className="p-1 text-gray-400 hover:text-red-600 rounded"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        </td>
+      </tr>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -343,16 +532,27 @@ export default function TasksPage() {
               <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
               <p className="text-sm text-gray-500 mt-1">Manage your tasks and assignments</p>
             </div>
-            <button
-              onClick={() => {
-                setEditingTask(null)
-                setShowForm(true)
-              }}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              New Task
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setViewType(viewType === 'card' ? 'table' : 'card')}
+                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  viewType === 'card' ? 'bg-gray-100 text-gray-700' : 'bg-blue-50 text-blue-700'
+                }`}
+              >
+                {viewType === 'card' ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+                {viewType === 'card' ? 'Table' : 'Cards'}
+              </button>
+              <button
+                onClick={() => {
+                  setEditingTask(null)
+                  setShowForm(true)
+                }}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                New Task
+              </button>
+            </div>
           </div>
 
           {/* Section Tabs */}
@@ -392,9 +592,9 @@ export default function TasksPage() {
               Filters
             </button>
 
-            {(filters.type || filters.priority || filters.assignedTo || filters.clientId) && (
+            {(filters.type || filters.priority || filters.status || filters.assignedTo || filters.clientId) && (
               <button
-                onClick={() => setFilters({ type: '', priority: '', assignedTo: '', clientId: '' })}
+                onClick={() => setFilters({ type: '', priority: '', status: '', assignedTo: '', clientId: '' })}
                 className="text-sm text-gray-500 hover:text-gray-700"
               >
                 Clear filters
@@ -404,7 +604,7 @@ export default function TasksPage() {
 
           {/* Filter Options */}
           {showFilters && (
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pb-3">
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pb-3">
               {/* Type Filter */}
               <select
                 value={filters.type}
@@ -431,6 +631,19 @@ export default function TasksPage() {
                     {label}
                   </option>
                 ))}
+              </select>
+
+              {/* Status Filter */}
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters({ ...filters, status: e.target.value as TaskStatus })}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              >
+                <option value="">All Status</option>
+                <option value={TaskStatus.TODO}>To Do</option>
+                <option value={TaskStatus.IN_PROGRESS}>In Progress</option>
+                <option value={TaskStatus.REVIEW}>Review</option>
+                <option value={TaskStatus.COMPLETED}>Completed</option>
               </select>
 
               {/* Assigned To Filter */}
@@ -493,9 +706,29 @@ export default function TasksPage() {
               Create a task
             </button>
           </div>
-        ) : (
+        ) : viewType === 'card' ? (
           <div className="space-y-3">
             {tasks.map(renderTaskCard)}
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10"></th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tasks.map(renderTableRow)}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

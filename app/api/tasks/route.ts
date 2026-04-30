@@ -2,25 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/server-auth'
 import { taskSchema } from '@/lib/validations'
-import { startOfDay, isBefore } from 'date-fns'
-
-// Helper to check and update overdue tasks
-async function updateOverdueTasks() {
-  const today = startOfDay(new Date())
-  
-  await prisma.task.updateMany({
-    where: {
-      status: 'PENDING',
-      dueDate: {
-        lt: today,
-      },
-      isOverdue: false,
-    },
-    data: {
-      isOverdue: true,
-    },
-  })
-}
 
 export async function GET(request: NextRequest) {
   console.log('GET /api/tasks - Starting request')
@@ -30,61 +11,73 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const type = searchParams.get('type')
     const priority = searchParams.get('priority')
-    const assignedTo = searchParams.get('assignedTo')
-    const clientId = searchParams.get('clientId')
     const projectId = searchParams.get('projectId')
-    const section = searchParams.get('section') // today, upcoming, overdue, completed
-
-    // Update overdue status before fetching
-    await updateOverdueTasks()
+    const assigneeId = searchParams.get('assigneeId')
+    const clientId = searchParams.get('clientId')
+    const section = searchParams.get('section')
+    const isCompleted = searchParams.get('isCompleted')
 
     const where: any = {}
     
     if (status) where.status = status
     if (type) where.type = type
     if (priority) where.priority = priority
-    if (assignedTo) where.assignedTo = assignedTo
-    if (clientId) where.clientId = clientId
     if (projectId) where.projectId = projectId
+    if (assigneeId) where.assigneeId = assigneeId
+    if (clientId) where.clientId = clientId
+    if (isCompleted !== null) where.isCompleted = isCompleted === 'true'
 
     // Handle section-based filtering
-    const today = startOfDay(new Date())
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
     if (section === 'today') {
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
       where.dueDate = {
         gte: today,
-        lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
+        lt: tomorrow,
       }
-      where.status = 'PENDING'
+      where.isCompleted = false
     } else if (section === 'upcoming') {
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
       where.dueDate = {
-        gte: new Date(today.getTime() + 24 * 60 * 60 * 1000),
+        gte: tomorrow,
       }
-      where.status = 'PENDING'
+      where.isCompleted = false
     } else if (section === 'overdue') {
-      where.isOverdue = true
-      where.status = 'PENDING'
+      where.dueDate = {
+        lt: today,
+      }
+      where.isCompleted = false
     } else if (section === 'completed') {
-      where.status = 'COMPLETED'
+      where.isCompleted = true
     }
 
     const tasks = await prisma.task.findMany({
       where,
       include: {
         project: { select: { id: true, name: true } },
-        assignedUser: { select: { id: true, name: true, email: true, avatar: true } },
+        assignee: { select: { id: true, name: true, email: true } },
         creator: { select: { id: true, name: true } },
-        client: { select: { id: true, companyName: true, ownerName: true } },
+        client: { select: { id: true, companyName: true } },
       },
-      orderBy: [
-        { priority: 'asc' },
-        { dueDate: 'asc' },
-      ],
+      orderBy: { dueDate: 'asc' },
     })
 
-    console.log('GET /api/tasks - Successfully retrieved', tasks.length, 'tasks')
-    return NextResponse.json(tasks)
+    // Add isOverdue computed field and assignedUser alias
+    const tasksWithOverdue = tasks.map(task => ({
+      ...task,
+      assignedUser: task.assignee,
+      isOverdue: task.dueDate && new Date(task.dueDate) < today && !task.isCompleted,
+    }))
+
+    console.log('GET /api/tasks - Successfully retrieved', tasksWithOverdue.length, 'tasks')
+    return NextResponse.json(tasksWithOverdue)
   } catch (error: any) {
     console.error('GET /api/tasks - Error:', error)
+    
     
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
@@ -100,42 +93,23 @@ export async function POST(request: NextRequest) {
     const user = await getCurrentUser()
     console.log('POST /api/tasks - User:', user?.userId)
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const body = await request.json()
     console.log('POST /api/tasks - Request body:', body)
     
     const validatedData = taskSchema.parse(body)
     console.log('POST /api/tasks - Validated data:', validatedData)
 
-    // Check if task will be overdue
-    let isOverdue = false
-    if (validatedData.dueDate) {
-      const dueDate = new Date(validatedData.dueDate)
-      isOverdue = isBefore(startOfDay(dueDate), startOfDay(new Date()))
-    }
-
     const task = await prisma.task.create({
       data: {
-        title: validatedData.title,
-        description: validatedData.description,
-        type: validatedData.type,
-        priority: validatedData.priority,
-        status: validatedData.status,
+        ...validatedData,
         dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
-        isOverdue,
-        assignedTo: validatedData.assignedTo,
-        clientId: validatedData.clientId || null,
-        projectId: validatedData.projectId || null,
-        creatorId: user.userId,
+        creatorId: user?.userId || 'system',
       },
       include: {
         project: { select: { id: true, name: true } },
-        assignedUser: { select: { id: true, name: true, email: true, avatar: true } },
+        assignee: { select: { id: true, name: true, email: true } },
         creator: { select: { id: true, name: true } },
-        client: { select: { id: true, companyName: true, ownerName: true } },
+        client: { select: { id: true, companyName: true } },
       },
     })
 
@@ -144,7 +118,7 @@ export async function POST(request: NextRequest) {
     // Log activity
     await prisma.activityLog.create({
       data: {
-        userId: user.userId,
+        userId: user?.userId || 'system',
         action: "CREATE_TASK",
         entityType: "TASK",
         entityId: task.id,
@@ -155,6 +129,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(task, { status: 201 })
   } catch (error: any) {
     console.error('POST /api/tasks - Error:', error)
+    
     
     return NextResponse.json(
       { error: error.message || 'Internal server error' },

@@ -2,16 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyRefreshToken, generateAccessToken, generateRefreshToken } from '@/lib/auth'
 import { setAuthCookies } from '@/lib/server-auth'
+import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { refreshToken } = body
+    const cookieStore = cookies()
+    const refreshToken = cookieStore.get('refreshToken')?.value
 
     if (!refreshToken) {
       return NextResponse.json(
         { error: 'Refresh token is required' },
-        { status: 400 }
+        { status: 401 }
       )
     }
 
