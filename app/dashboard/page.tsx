@@ -7,15 +7,30 @@ import {
   AlertCircle,
   TrendingUp,
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  Clock
 } from 'lucide-react'
 import { format, isToday, isPast, parseISO } from 'date-fns'
+
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 2,
+  }).format(amount)
+}
 
 interface TaskStats {
   dueToday: number
   overdue: number
   highPriority: number
   total: number
+}
+
+interface PaymentStats {
+  totalRevenue: number
+  pendingPayments: number
+  overduePayments: number
 }
 
 export default function DashboardPage() {
@@ -26,10 +41,16 @@ export default function DashboardPage() {
     highPriority: 0,
     total: 0,
   })
+  const [paymentStats, setPaymentStats] = useState<PaymentStats>({
+    totalRevenue: 0,
+    pendingPayments: 0,
+    overduePayments: 0,
+  })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchTaskStats()
+    fetchPaymentStats()
   }, [])
 
   const fetchTaskStats = async () => {
@@ -62,6 +83,33 @@ export default function DashboardPage() {
       }
     } catch (error) {
       console.error('Error fetching task stats:', error)
+    }
+  }
+
+  const fetchPaymentStats = async () => {
+    try {
+      const response = await fetch('/api/payments')
+      if (response.ok) {
+        const payments = await response.json()
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+
+        const totalRevenue = payments
+          .filter((p: any) => p.status === 'PAID')
+          .reduce((sum: number, p: any) => sum + p.amount, 0)
+
+        const pendingPayments = payments
+          .filter((p: any) => p.status === 'PENDING')
+          .reduce((sum: number, p: any) => sum + p.amount, 0)
+
+        const overduePayments = payments
+          .filter((p: any) => p.isOverdue)
+          .reduce((sum: number, p: any) => sum + p.amount, 0)
+
+        setPaymentStats({ totalRevenue, pendingPayments, overduePayments })
+      }
+    } catch (error) {
+      console.error('Error fetching payment stats:', error)
     } finally {
       setLoading(false)
     }
@@ -106,6 +154,36 @@ export default function DashboardPage() {
     },
   ]
 
+  const paymentCards = [
+    {
+      title: 'Total Revenue',
+      value: formatCurrency(paymentStats.totalRevenue),
+      icon: Clock,
+      color: 'bg-green-500',
+      bgColor: 'bg-green-50',
+      textColor: 'text-green-600',
+      link: '/dashboard/payments?status=PAID',
+    },
+    {
+      title: 'Pending Payments',
+      value: formatCurrency(paymentStats.pendingPayments),
+      icon: Clock,
+      color: 'bg-yellow-500',
+      bgColor: 'bg-yellow-50',
+      textColor: 'text-yellow-600',
+      link: '/dashboard/payments?status=PENDING',
+    },
+    {
+      title: 'Overdue Payments',
+      value: formatCurrency(paymentStats.overduePayments),
+      icon: AlertCircle,
+      color: 'bg-red-500',
+      bgColor: 'bg-red-50',
+      textColor: 'text-red-600',
+      link: '/dashboard/payments?section=overdue',
+    },
+  ]
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -122,6 +200,34 @@ export default function DashboardPage() {
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {statCards.map((card) => {
+              const Icon = card.icon
+              return (
+                <div
+                  key={card.title}
+                  className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => router.push(card.link)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">{card.title}</p>
+                      <p className="mt-2 text-3xl font-bold text-gray-900">{card.value}</p>
+                    </div>
+                    <div className={`p-3 rounded-lg ${card.bgColor}`}>
+                      <Icon className={`h-6 w-6 ${card.textColor}`} />
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center text-sm text-gray-500">
+                    <span>View all</span>
+                    <ArrowRight className="ml-1 h-4 w-4" />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Payment Stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {paymentCards.map((card) => {
               const Icon = card.icon
               return (
                 <div
@@ -173,6 +279,18 @@ export default function DashboardPage() {
                 <div>
                   <p className="font-medium text-gray-900">View Clients</p>
                   <p className="text-sm text-gray-500">Manage client relationships</p>
+                </div>
+              </button>
+              <button
+                onClick={() => router.push('/dashboard/payments')}
+                className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
+              >
+                <div className="p-2 bg-purple-50 rounded-lg">
+                  <Clock className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">View Payments</p>
+                  <p className="text-sm text-gray-500">Track payments and revenue</p>
                 </div>
               </button>
             </div>

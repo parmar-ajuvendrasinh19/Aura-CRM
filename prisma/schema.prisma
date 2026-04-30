@@ -69,7 +69,13 @@ enum TaskPriority {
 enum PaymentStatus {
   PENDING
   PAID
+  PARTIAL
   OVERDUE
+}
+
+enum PaymentType {
+  WEBSITE
+  MARKETING
 }
 
 enum ActivityType {
@@ -243,11 +249,12 @@ model Activity {
 model Payment {
   id             String        @id @default(cuid())
   amount         Float
+  currency       String        @default("INR")
   status         PaymentStatus @default(PENDING)
+  type           PaymentType
   dueDate        DateTime?
-  paidDate       DateTime?
-  description    String?
-  invoiceNumber  String?
+  paidAt         DateTime?
+  notes          String?
   clientId       String?
   projectId      String?
   createdAt      DateTime      @default(now())
@@ -259,6 +266,7 @@ model Payment {
   @@index([clientId])
   @@index([projectId])
   @@index([status])
+  @@index([type])
 }
 
 model ActivityLog {

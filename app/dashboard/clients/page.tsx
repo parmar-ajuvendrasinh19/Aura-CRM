@@ -204,7 +204,7 @@ export default function ClientsPage() {
           ) : (
             <div className="divide-y divide-gray-100">
               {clients.map((client) => (
-                <div key={client.id} className="p-5 hover:bg-gray-50 transition-colors">
+                <div key={client.id} className="p-5 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => window.location.href = `/dashboard/clients/${client.id}`}>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900">{client.companyName}</h3>
