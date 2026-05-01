@@ -4,6 +4,8 @@ import { verifyPassword, generateAccessToken, generateRefreshToken } from '@/lib
 import { setAuthCookies } from '@/lib/server-auth'
 import { loginSchema } from '@/lib/validations'
 
+export const dynamic = "force-dynamic"
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()

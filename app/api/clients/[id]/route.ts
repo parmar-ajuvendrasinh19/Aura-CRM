@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/server-auth'
 import { clientSchema } from '@/lib/validations'
 
+export const dynamic = "force-dynamic"
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

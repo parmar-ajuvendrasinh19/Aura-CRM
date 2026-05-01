@@ -4,6 +4,8 @@ import { getCurrentUser } from '@/lib/server-auth'
 import { hashPassword } from '@/lib/auth'
 import { userSchema } from '@/lib/validations'
 
+export const dynamic = "force-dynamic"
+
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser()
