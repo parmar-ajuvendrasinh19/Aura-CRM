@@ -1,8 +1,9 @@
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/server-auth'
-
-export const dynamic = "force-dynamic";
 
 /**
  * DELETE /api/account/delete

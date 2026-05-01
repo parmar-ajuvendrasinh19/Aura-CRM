@@ -1,10 +1,11 @@
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyRefreshToken, generateAccessToken, generateRefreshToken } from '@/lib/auth'
 import { setAuthCookies } from '@/lib/server-auth'
 import { cookies } from 'next/headers'
-
-export const dynamic = "force-dynamic"
 
 export async function POST(request: NextRequest) {
   try {

@@ -1,9 +1,10 @@
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/server-auth'
 import { z } from 'zod'
-
-export const dynamic = "force-dynamic"
 
 const updateProfileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),

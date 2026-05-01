@@ -1,10 +1,11 @@
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/server-auth'
 import { verifyPassword, hashPassword } from '@/lib/auth'
 import { z } from 'zod'
-
-export const dynamic = "force-dynamic"
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
